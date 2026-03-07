@@ -192,19 +192,13 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
       <option value="india-open-2026">India Open — Jan 13–18</option>
       <option value="singapore-open-2026">Singapore Open — May 26–31</option>
       <option value="japan-open-2026">Japan Open — Jul 14–19</option>
-      <option value="china-masters-2026">China Masters — Sep 1–6</option>
       <option value="denmark-open-2026">Denmark Open — Oct 13–18</option>
       <option value="french-open-2026">French Open — Oct 20–25</option>
     </optgroup>
     <optgroup label="── 2026 Super 500 ──">
-      <option value="indonesia-masters-2026">Indonesia Masters — Jan 20–25</option>
       <option value="thailand-open-2026">Thailand Open — May 12–17</option>
-      <option value="malaysia-masters-2026">Malaysia Masters — May 19–24</option>
-      <option value="australia-open-2026">Australian Open — Jun 9–14</option>
       <option value="arctic-open-2026">Arctic Open — Oct 6–11</option>
       <option value="hylo-open-2026">Hylo Open — Oct 27–Nov 1</option>
-      <option value="japan-masters-2026">Japan Masters — Nov 10–15</option>
-      <option value="hong-kong-open-2026">Hong Kong Open — Nov 17–22</option>
     </optgroup>
   </select>
   <span id="tmt-level-badge" class="tmt-badge badge-s1000">Super 1000</span>
@@ -238,25 +232,84 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 
 <script>
 // ─── TOURNAMENT REGISTRY ────────────────────────────────────────────────────
+// Each tournament needs: tmtId (numeric BWF ID), tmtCode (UUID from API),
+// dates (array of YYYY-MM-DD for each day), tmtUrl (results page link)
+// tmtCode can be found by opening DevTools on the BWF results page and looking
+// at network requests for "day-matches?tournamentCode=..."
 const TOURNAMENTS = {
-  'malaysia-2026':        { name:'Malaysia Open 2026',        level:'Super 1000', location:'Kuala Lumpur, Malaysia',  hasProxy:false, badge:'s1000' },
-  'all-england-2026':     { name:'All England Open 2026',     level:'Super 1000', location:'Birmingham, England',     hasProxy:true,  badge:'s1000', tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5515/yonex-all-england-open-badminton-championships-2026/results' },
-  'indonesia-open-2026':  { name:'Indonesia Open 2026',       level:'Super 1000', location:'Jakarta, Indonesia',      hasProxy:false, badge:'s1000' },
-  'china-open-2026':      { name:'China Open 2026',           level:'Super 1000', location:'Changzhou, China',        hasProxy:false, badge:'s1000' },
-  'india-open-2026':      { name:'India Open 2026',           level:'Super 750',  location:'New Delhi, India',        hasProxy:false, badge:'s750' },
-  'singapore-open-2026':  { name:'Singapore Open 2026',       level:'Super 750',  location:'Singapore',               hasProxy:false, badge:'s750' },
-  'japan-open-2026':      { name:'Japan Open 2026',           level:'Super 750',  location:'Tokyo, Japan',            hasProxy:false, badge:'s750' },
-  'china-masters-2026':   { name:'China Masters 2026',        level:'Super 750',  location:'Shenzhen, China',         hasProxy:false, badge:'s750' },
-  'denmark-open-2026':    { name:'Denmark Open 2026',         level:'Super 750',  location:'Odense, Denmark',         hasProxy:false, badge:'s750' },
-  'french-open-2026':     { name:'French Open 2026',          level:'Super 750',  location:'Paris, France',           hasProxy:false, badge:'s750' },
-  'indonesia-masters-2026':{ name:'Indonesia Masters 2026',   level:'Super 500',  location:'Jakarta, Indonesia',      hasProxy:false, badge:'s500' },
-  'thailand-open-2026':   { name:'Thailand Open 2026',        level:'Super 500',  location:'Bangkok, Thailand',       hasProxy:false, badge:'s500' },
-  'malaysia-masters-2026':{ name:'Malaysia Masters 2026',     level:'Super 500',  location:'Kuala Lumpur, Malaysia',  hasProxy:false, badge:'s500' },
-  'australia-open-2026':  { name:'Australian Open 2026',      level:'Super 500',  location:'Sydney, Australia',       hasProxy:false, badge:'s500' },
-  'arctic-open-2026':     { name:'Arctic Open 2026',          level:'Super 500',  location:'Vantaa, Finland',         hasProxy:false, badge:'s500' },
-  'hylo-open-2026':       { name:'Hylo Open 2026',            level:'Super 500',  location:'Saarbrücken, Germany',    hasProxy:false, badge:'s500' },
-  'japan-masters-2026':   { name:'Japan Masters 2026',        level:'Super 500',  location:'Kumamoto, Japan',         hasProxy:false, badge:'s500' },
-  'hong-kong-open-2026':  { name:'Hong Kong Open 2026',       level:'Super 500',  location:'Hong Kong',               hasProxy:false, badge:'s500' },
+  'malaysia-2026': {
+    name:'Malaysia Open 2026', level:'Super 1000', location:'Kuala Lumpur, Malaysia', badge:'s1000',
+    tmtId:5227, tmtCode:'3E1F2E88-4D3A-4B8A-9C1F-2E884D3A4B8A',
+    dates:['2026-01-06','2026-01-07','2026-01-08','2026-01-09','2026-01-10','2026-01-11'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5227/petronas-malaysia-open-2026/results'
+  },
+  'all-england-2026': {
+    name:'All England Open 2026', level:'Super 1000', location:'Birmingham, England', badge:'s1000',
+    tmtId:5515, tmtCode:'1A1AB550-BF1E-4CE9-A774-82414E3D4405',
+    dates:['2026-03-03','2026-03-04','2026-03-05','2026-03-06','2026-03-07','2026-03-08'],
+    hasKVCache:true,
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5515/yonex-all-england-open-badminton-championships-2026/results'
+  },
+  'india-open-2026': {
+    name:'India Open 2026', level:'Super 750', location:'New Delhi, India', badge:'s750',
+    tmtId:5511, tmtCode:'UNKNOWN',
+    dates:['2026-01-13','2026-01-14','2026-01-15','2026-01-16','2026-01-17','2026-01-18'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5511/yonex-sunrise-india-open-2026/results'
+  },
+  'indonesia-open-2026': {
+    name:'Indonesia Open 2026', level:'Super 1000', location:'Jakarta, Indonesia', badge:'s1000',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-06-02','2026-06-03','2026-06-04','2026-06-05','2026-06-06','2026-06-07'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'singapore-open-2026': {
+    name:'Singapore Open 2026', level:'Super 750', location:'Singapore', badge:'s750',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-05-26','2026-05-27','2026-05-28','2026-05-29','2026-05-30','2026-05-31'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'thailand-open-2026': {
+    name:'Thailand Open 2026', level:'Super 500', location:'Bangkok, Thailand', badge:'s500',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-05-12','2026-05-13','2026-05-14','2026-05-15','2026-05-16','2026-05-17'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'denmark-open-2026': {
+    name:'Denmark Open 2026', level:'Super 750', location:'Odense, Denmark', badge:'s750',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-10-13','2026-10-14','2026-10-15','2026-10-16','2026-10-17','2026-10-18'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'french-open-2026': {
+    name:'French Open 2026', level:'Super 750', location:'Paris, France', badge:'s750',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-10-20','2026-10-21','2026-10-22','2026-10-23','2026-10-24','2026-10-25'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'china-open-2026': {
+    name:'China Open 2026', level:'Super 1000', location:'Changzhou, China', badge:'s1000',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-07-21','2026-07-22','2026-07-23','2026-07-24','2026-07-25','2026-07-26'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'japan-open-2026': {
+    name:'Japan Open 2026', level:'Super 750', location:'Tokyo, Japan', badge:'s750',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-07-14','2026-07-15','2026-07-16','2026-07-17','2026-07-18','2026-07-19'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'arctic-open-2026': {
+    name:'Arctic Open 2026', level:'Super 500', location:'Vantaa, Finland', badge:'s500',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-10-06','2026-10-07','2026-10-08','2026-10-09','2026-10-10','2026-10-11'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'hylo-open-2026': {
+    name:'Hylo Open 2026', level:'Super 500', location:'Saarbrücken, Germany', badge:'s500',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-10-27','2026-10-28','2026-10-29','2026-10-30','2026-10-31','2026-11-01'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
 };
 
 const PROXY_URL = 'https://bwf-proxy.samuel-2ab.workers.dev';
@@ -351,21 +404,59 @@ function refreshCurrent() {
 }
 
 // ─── FETCH ───────────────────────────────────────────────────────────────────
-// The worker's /data endpoint returns:
-//   { matches: { "1": { "matchCode": {matchObj}, ... }, "2": {...}, ... } }
-// drawCode "1"=MS "2"=WS "3"=MD "4"=WD "5"=XD
+// For All England: worker has KV cache at /data (pre-fetched by /refresh)
+// For all others: worker /fetch?tmtCode=X&date=Y&drawCode=Z proxies BWF API (CORS bypass)
+// Returns normalised: { matches: { "1": { code: matchObj }, ... } }
 
 async function fetchData() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.hasProxy) return null;
-  const r = await fetch(`${PROXY_URL}/data`);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return await r.json();
+  if (!tmt.tmtId && !tmt.hasKVCache) throw new Error('Tournament not yet configured — tmtId unknown.');
+
+  // All England uses the pre-cached KV store
+  if (tmt.hasKVCache) {
+    const r = await fetch(`${PROXY_URL}/data`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  }
+
+  // For all other tournaments: fetch each day × each draw via the worker proxy
+  // Worker /fetch?tmtCode=X&date=Y&drawCode=Z calls BWF day-matches and returns JSON
+  if (tmt.tmtCode === 'UNKNOWN') {
+    throw new Error('Tournament tmtCode not yet configured. Check DevTools on the BWF results page for the tournamentCode UUID.');
+  }
+
+  const allMatches = { '1':{}, '2':{}, '3':{}, '4':{}, '5':{} };
+  const draws = ['1','2','3','4','5'];
+
+  // Fetch all day+draw combos in parallel
+  const tasks = [];
+  for (const date of tmt.dates) {
+    for (const draw of draws) {
+      tasks.push(
+        fetch(`${PROXY_URL}/fetch?tmtCode=${tmt.tmtCode}&date=${date}&drawCode=${draw}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(json => {
+            if (!json) return;
+            // BWF day-matches returns { results: [...] } or similar
+            const items = json.results || json.matches || json || [];
+            const list = Array.isArray(items) ? items : Object.values(items);
+            list.forEach(m => {
+              const dc = m.drawCode || draw;
+              const key = m.code || m.id;
+              if (key) allMatches[dc][key] = m;
+            });
+          })
+          .catch(() => {})
+      );
+    }
+  }
+  await Promise.all(tasks);
+  return { matches: allMatches };
 }
 
 async function fetchAndRenderDraw() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.hasProxy) {
+  if (!tmt.tmtId && !tmt.hasKVCache) {
     document.getElementById('bracket-content').innerHTML = `<div class="center">
       <div class="ctext" style="color:var(--red)">Tournament Not Yet Available</div>
       <div class="ctext">Live data for this tournament isn't set up yet. Select All England 2026 to see the live draw.</div>
@@ -401,7 +492,7 @@ async function fetchAndRenderDraw() {
 
 async function fetchAndRenderFrench() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.hasProxy) {
+  if (!tmt.tmtId && !tmt.hasKVCache) {
     document.getElementById('fp-sub').textContent = 'Tournament not yet available.';
     document.getElementById('fp-grid').innerHTML = `<div class="fp-empty">No data yet for this tournament.</div>`;
     return;
@@ -425,7 +516,7 @@ async function fetchAndRenderFrench() {
 
 async function fetchAndRenderScores() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.hasProxy) {
+  if (!tmt.tmtId && !tmt.hasKVCache) {
     document.getElementById('scores-content').innerHTML = `<div class="center"><div class="ctext">No data for this tournament yet.</div></div>`;
     return;
   }
