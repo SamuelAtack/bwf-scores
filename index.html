@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BWF Live Scores</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bwf-red: #E8001D;
+    --bwf-dark-red: #b5001a;
+    --bwf-white: #ffffff;
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --live: #00e676;
+    --live-bg: rgba(0,230,118,0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--bwf-red);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(232,0,29,0.4);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-badge {
+    background: white;
+    color: var(--bwf-red);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    padding: 3px 8px;
+    letter-spacing: 1px;
+  }
+
+  .logo-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: white;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.25);
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: white;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--live);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .refresh-btn {
+    background: rgba(0,0,0,0.25);
+    border: none;
+    color: white;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .refresh-btn:hover { background: rgba(0,0,0,0.4); }
+
+  /* TOURNAMENT BANNER */
+  .tournament-banner {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tournament-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: white;
+  }
+
+  .tournament-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .date-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .date-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+
+  .date-btn:hover { border-color: var(--bwf-red); color: white; }
+
+  .date-display {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: white;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  /* FILTERS */
+  .filters {
+    padding: 12px 24px;
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    overflow-x: auto;
+  }
+
+  .filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 5px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    white-space: nowrap;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .filter-btn:hover { border-color: var(--bwf-red); color: white; }
+  .filter-btn.active {
+    background: var(--bwf-red);
+    border-color: var(--bwf-red);
+    color: white;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    padding: 20px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* SECTION HEADER */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+
+  .section-header:first-child { margin-top: 0; }
+
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* MATCH CARD */
+  .matches-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    gap: 8px;
+  }
+
+  .match-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    position: relative;
+  }
+
+  .match-card:hover {
+    border-color: var(--bwf-red);
+    transform: translateY(-1px);
+  }
+
+  .match-card.live {
+    border-color: rgba(0,230,118,0.3);
+  }
+
+  .match-card.live:hover {
+    border-color: var(--live);
+  }
+
+  /* Live accent bar */
+  .match-card.live::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--live);
+  }
+
+  .match-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .match-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .event-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: white;
+    background: var(--bwf-red);
+    padding: 2px 6px;
+    border-radius: 1px;
+  }
+
+  .round-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .match-status {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .match-status.live { color: var(--live); }
+  .match-status.scheduled { color: var(--text-muted); }
+  .match-status.finished { color: #aaa; }
+
+  .match-body {
+    padding: 10px 12px;
+  }
+
+  .team-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+  }
+
+  .team-row + .team-row {
+    border-top: 1px solid var(--border);
+  }
+
+  .flag-wrap {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--surface2);
+  }
+
+  .flag-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .seed {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .player-name {
+    flex: 1;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.3px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .player-name.winner {
+    color: white;
+    font-weight: 700;
+  }
+
+  .scores {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .score-set {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    min-width: 22px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .score-set.winning { color: white; }
+  .score-set.current-live { color: var(--live); }
+
+  .match-footer {
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+  }
+
+  .court-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .time-info {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .time-info.live-time { color: var(--live); }
+
+  /* OOP text */
+  .oop-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* LOADING */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    gap: 16px;
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--bwf-red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  /* ERROR */
+  .error-box {
+    background: rgba(232,0,29,0.1);
+    border: 1px solid rgba(232,0,29,0.3);
+    border-radius: 3px;
+    padding: 20px;
+    text-align: center;
+    margin: 40px auto;
+    max-width: 500px;
+  }
+
+  .error-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--bwf-red);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .error-msg {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .error-msg a { color: var(--bwf-red); }
+
+  /* EMPTY */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  /* CONFIG PANEL */
+  .config-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .config-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .config-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .config-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .config-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    padding: 7px 10px;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  .config-input:focus { border-color: var(--bwf-red); }
+
+  .load-btn {
+    background: var(--bwf-red);
+    border: none;
+    color: white;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+    padding: 8px 20px;
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 2px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .load-btn:hover { background: var(--bwf-dark-red); }
+
+  /* CORS notice */
+  .cors-notice {
+    background: rgba(255,200,0,0.08);
+    border: 1px solid rgba(255,200,0,0.2);
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.6;
+    margin-top: 10px;
+  }
+
+  .cors-notice strong { color: #ffd700; }
+
+  @media (max-width: 600px) {
+    .matches-grid { grid-template-columns: 1fr; }
+    .tournament-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+    header { padding: 0 14px; }
+    .main { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-badge">BWF</div>
+    <div class="logo-text">Live Scores</div>
+  </div>
+  <div class="header-right">
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      LIVE
+    </div>
+    <button class="refresh-btn" onclick="loadMatches()">↻ Refresh</button>
+  </div>
+</header>
+
+<div id="tournament-banner" style="display:none" class="tournament-banner">
+  <div>
+    <div class="tournament-name" id="tournament-title">—</div>
+    <div class="tournament-meta" id="tournament-location">—</div>
+  </div>
+  <div class="date-nav">
+    <button class="date-btn" onclick="changeDate(-1)">‹</button>
+    <div class="date-display" id="date-display">—</div>
+    <button class="date-btn" onclick="changeDate(1)">›</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Config -->
+  <div class="config-panel" id="config-panel">
+    <div class="config-title">Tournament Setup</div>
+    <div class="config-row">
+      <div class="config-field">
+        <div class="config-label">Tournament Code</div>
+        <input class="config-input" id="input-code" type="text"
+          placeholder="e.g. 1A1AB550-BF1E-4CE9-A774-82414E3D4405"
+          value="1A1AB550-BF1E-4CE9-A774-82414E3D4405">
+      </div>
+      <div class="config-field" style="max-width:160px">
+        <div class="config-label">Date</div>
+        <input class="config-input" id="input-date" type="date">
+      </div>
+      <button class="load-btn" onclick="loadMatches()">Load Scores</button>
+    </div>
+    <div class="cors-notice">
+      <strong>Note:</strong> This page calls the BWF API directly from your browser. 
+      It works fine when opened locally or hosted on GitHub Pages. 
+      The API may occasionally require a refresh if scores are slow to update.
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters" id="filters" style="display:none;padding-left:0;padding-right:0">
+    <button class="filter-btn active" data-event="ALL" onclick="setFilter(this,'ALL')">All</button>
+    <button class="filter-btn" data-event="MS" onclick="setFilter(this,'MS')">Men's Singles</button>
+    <button class="filter-btn" data-event="WS" onclick="setFilter(this,'WS')">Women's Singles</button>
+    <button class="filter-btn" data-event="MD" onclick="setFilter(this,'MD')">Men's Doubles</button>
+    <button class="filter-btn" data-event="WD" onclick="setFilter(this,'WD')">Women's Doubles</button>
+    <button class="filter-btn" data-event="XD" onclick="setFilter(this,'XD')">Mixed Doubles</button>
+  </div>
+
+  <!-- Content -->
+  <div id="content"></div>
+</div>
+
+<script>
+  let allMatches = [];
+  let currentFilter = 'ALL';
+  let currentDate = new Date().toISOString().slice(0, 10);
+  let autoRefreshTimer = null;
+
+  // Set today's date as default
+  document.getElementById('input-date').value = currentDate;
+
+  function formatDate(d) {
+    const date = new Date(d + 'T00:00:00');
+    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function changeDate(delta) {
+    const d = new Date(currentDate + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    currentDate = d.toISOString().slice(0, 10);
+    document.getElementById('input-date').value = currentDate;
+    document.getElementById('date-display').textContent = formatDate(currentDate);
+    loadMatches();
+  }
+
+  function setFilter(btn, event) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = event;
+    renderMatches();
+  }
+
+  async function loadMatches() {
+    const code = document.getElementById('input-code').value.trim();
+    const date = document.getElementById('input-date').value.trim();
+    if (!code || !date) return;
+
+    currentDate = date;
+    document.getElementById('date-display').textContent = formatDate(date);
+
+    const content = document.getElementById('content');
+    content.innerHTML = `<div class="loading"><div class="spinner"></div><div class="loading-text">Loading matches...</div></div>`;
+
+    // Build URL
+    const url = `https://extranet-lv.bwfbadminton.com/api/tournaments/day-matches?tournamentCode=${encodeURIComponent(code)}&date=${date}&order=2&court=0`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      allMatches = Array.isArray(data) ? data : (data.data || []);
+
+      if (allMatches.length === 0) {
+        content.innerHTML = `<div class="empty">No matches found for this date.</div>`;
+        return;
+      }
+
+      // Update tournament banner
+      const first = allMatches[0];
+      document.getElementById('tournament-title').textContent = first.tournamentName || 'Tournament';
+      document.getElementById('tournament-location').textContent = first.locationName || '';
+      document.getElementById('tournament-banner').style.display = 'flex';
+      document.getElementById('filters').style.display = 'flex';
+
+      // Hide config panel after first load
+      document.getElementById('config-panel').style.display = 'none';
+
+      renderMatches();
+
+      // Auto-refresh every 30s if any live matches
+      clearInterval(autoRefreshTimer);
+      const hasLive = allMatches.some(m => m.matchStatus === 'P');
+      if (hasLive) {
+        autoRefreshTimer = setInterval(loadMatches, 30000);
+      }
+
+    } catch (err) {
+      content.innerHTML = `
+        <div class="error-box">
+          <div class="error-title">Could not load matches</div>
+          <div class="error-msg">
+            ${err.message.includes('Failed to fetch') 
+              ? 'CORS error: the BWF API blocked the request. Try opening this file directly in your browser rather than through a server, or use a browser extension like <a href="https://chrome.google.com/webstore/detail/cors-unblock" target="_blank">CORS Unblock</a>.'
+              : `Error: ${err.message}`
+            }
+          </div>
+        </div>`;
+    }
+  }
+
+  function getPlayerName(team) {
+    if (!team || !team.players || team.players.length === 0) return '—';
+    return team.players.map(p => p.nameDisplay).join(' / ');
+  }
+
+  function getWinner(match) {
+    // winner field: 1 = team1, 2 = team2, 0 = none
+    if (match.winner === 1) return 1;
+    if (match.winner === 2) return 2;
+    // infer from score if finished
+    if (match.matchStatus === 'F' || match.matchStatus === 'C') {
+      let t1 = 0, t2 = 0;
+      (match.score || []).forEach(s => {
+        if (s.home > s.away) t1++; else t2++;
+      });
+      if (t1 > t2) return 1;
+      if (t2 > t1) return 2;
+    }
+    return 0;
+  }
+
+  function renderScores(match, teamNum) {
+    const scores = match.score || [];
+    if (scores.length === 0) return '';
+    const winner = getWinner(match);
+    const isLive = match.matchStatus === 'P';
+    const lastSet = scores[scores.length - 1];
+
+    return scores.map((s, i) => {
+      const val = teamNum === 1 ? s.home : s.away;
+      const oppVal = teamNum === 1 ? s.away : s.home;
+      const isCurrentSet = isLive && i === scores.length - 1;
+      const isWinningSet = val > oppVal;
+      let cls = 'score-set';
+      if (isCurrentSet) cls += ' current-live';
+      else if (isWinningSet) cls += ' winning';
+      return `<span class="${cls}">${val}</span>`;
+    }).join('');
+  }
+
+  function renderMatches() {
+    const filtered = currentFilter === 'ALL'
+      ? allMatches
+      : allMatches.filter(m => m.eventName === currentFilter);
+
+    if (filtered.length === 0) {
+      document.getElementById('content').innerHTML = `<div class="empty">No ${currentFilter} matches on this date.</div>`;
+      return;
+    }
+
+    // Group by live vs scheduled vs finished
+    const live = filtered.filter(m => m.matchStatus === 'P');
+    const scheduled = filtered.filter(m => m.matchStatus === 'N' || m.matchStatus === '');
+    const finished = filtered.filter(m => m.matchStatus === 'F' || m.matchStatus === 'C' || m.matchStatus === 'W');
+
+    let html = '';
+
+    if (live.length > 0) {
+      html += `<div class="section-header"><div class="section-title">On Court Now</div><div class="section-line"></div></div>`;
+      html += `<div class="matches-grid">${live.map(renderCard).join('')}</div>`;
+    }
+
+    if (scheduled.length > 0) {
+      html += `<div class="section-header"><div class="section-title">Upcoming</div><div class="section-line"></div></div>`;
+      html += `<div class="matches-grid">${scheduled.map(renderCard).join('')}</div>`;
+    }
+
+    if (finished.length > 0) {
+      html += `<div class="section-header"><div class="section-title">Completed</div><div class="section-line"></div></div>`;
+      html += `<div class="matches-grid">${finished.map(renderCard).join('')}</div>`;
+    }
+
+    document.getElementById('content').innerHTML = html;
+  }
+
+  function renderCard(match) {
+    const isLive = match.matchStatus === 'P';
+    const isFinished = match.matchStatus === 'F' || match.matchStatus === 'C' || match.matchStatus === 'W';
+    const winner = getWinner(match);
+
+    const statusLabel = isLive ? 'In Progress' : isFinished ? 'Finished' : (match.oopText || 'Scheduled');
+    const statusClass = isLive ? 'live' : isFinished ? 'finished' : 'scheduled';
+
+    const t1Name = getPlayerName(match.team1);
+    const t2Name = getPlayerName(match.team2);
+    const t1Flag = match.team1?.countryFlagUrl || '';
+    const t2Flag = match.team2?.countryFlagUrl || '';
+    const t1Seed = match.team1seed ? `[${match.team1seed}]` : '';
+    const t2Seed = match.team2seed ? `[${match.team2seed}]` : '';
+
+    const t1Winner = winner === 1;
+    const t2Winner = winner === 2;
+
+    const matchTime = match.matchTime ? match.matchTime.slice(11, 16) : '';
+    const duration = match.duration ? `${match.time}` : '';
+
+    const roundMap = { 'R1': 'Round 1', 'R2': 'Round 2', 'QF': 'Quarter-Final', 'SF': 'Semi-Final', 'F': 'Final' };
+    const roundLabel = roundMap[match.roundName] || match.roundName || '';
+
+    const bwfUrl = `https://bwfworldtour.bwfbadminton.com/tournament/${match.tournamentCode}/results`;
+
+    return `
+    <div class="match-card ${isLive ? 'live' : ''}" onclick="window.open('${bwfUrl}','_blank')">
+      <div class="match-header">
+        <div class="match-meta-left">
+          <span class="event-tag">${match.eventName || ''}</span>
+          <span class="round-tag">${roundLabel}</span>
+        </div>
+        <span class="match-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="match-body">
+        <div class="team-row">
+          <div class="flag-wrap">
+            ${t1Flag ? `<img src="${t1Flag}" alt="${match.team1?.countryCode || ''}">` : ''}
+          </div>
+          <span class="seed">${t1Seed}</span>
+          <span class="player-name ${t1Winner ? 'winner' : ''}">${t1Name}</span>
+          <div class="scores">${renderScores(match, 1)}</div>
+        </div>
+        <div class="team-row">
+          <div class="flag-wrap">
+            ${t2Flag ? `<img src="${t2Flag}" alt="${match.team2?.countryCode || ''}">` : ''}
+          </div>
+          <span class="seed">${t2Seed}</span>
+          <span class="player-name ${t2Winner ? 'winner' : ''}">${t2Name}</span>
+          <div class="scores">${renderScores(match, 2)}</div>
+        </div>
+      </div>
+      <div class="match-footer">
+        <div class="court-info">
+          <span>🏸</span>
+          <span>${match.courtName || ''}</span>
+        </div>
+        <div class="time-info ${isLive ? 'live-time' : ''}">
+          ${isLive ? `⏱ ${duration}` : matchTime}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Auto-load on page open
+  loadMatches();
+</script>
+</body>
+</html>
