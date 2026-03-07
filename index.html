@@ -134,6 +134,37 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .ctext{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:12px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;max-width:460px;text-align:center;line-height:1.8;}
+
+/* SCOREBOARD */
+.scores-panel{padding:16px 20px 40px;}
+.scores-section{margin-bottom:24px;}
+.scores-section-hdr{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.scores-section-hdr .live-count{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;background:rgba(0,230,118,0.12);color:var(--live);border:1px solid rgba(0,230,118,0.25);padding:1px 7px;letter-spacing:1px;}
+.score-row{display:flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border);margin-bottom:4px;overflow:hidden;position:relative;cursor:pointer;transition:border-color 0.15s;}
+.score-row:hover{border-color:#444;}
+.score-row.sr-live{border-color:rgba(0,230,118,0.3);}
+.score-row.sr-live::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--live);}
+.score-row.sr-french{box-shadow:inset 0 0 0 1px rgba(0,85,164,0.3);}
+.sr-disc{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);padding:6px 5px;background:var(--surface2);border-right:1px solid var(--border);flex-shrink:0;min-height:52px;display:flex;align-items:center;justify-content:center;}
+.sr-rnd{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:0 8px;width:36px;flex-shrink:0;text-align:center;}
+.sr-teams{flex:1;padding:4px 6px;min-width:0;}
+.sr-team{display:flex;align-items:center;gap:5px;padding:2px 0;min-height:22px;}
+.sr-team+.sr-team{border-top:1px solid var(--border);}
+.sr-flag{width:14px;height:14px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#2a2a2a;}
+.sr-seed{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;color:var(--red);width:18px;flex-shrink:0;}
+.sr-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
+.sr-name.sn-won{color:white;font-weight:700;}
+.sr-name.sn-french{color:#5590e8;}
+.sr-scores{display:flex;gap:3px;padding:0 8px;flex-shrink:0;align-items:center;}
+.sr-set{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;min-width:16px;text-align:right;color:#333;line-height:1;}
+.sr-set.ss-w{color:#ddd;}
+.sr-set.ss-live{color:var(--live);}
+.sr-status{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:0 10px;flex-shrink:0;min-width:50px;text-align:center;}
+.sr-status.sst-live{color:var(--live);}
+.sr-status.sst-ft{color:#333;}
+.sr-status.sst-next{color:#2a2a2a;}
+.sr-court{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:600;letter-spacing:1px;color:#2e2e2e;padding:0 6px 0 0;flex-shrink:0;text-align:right;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sr-court.ct-live{color:#444;}
 </style>
 </head>
 <body>
@@ -182,12 +213,19 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 
 <div class="main-tabs">
   <button class="main-tab active" id="tab-draw" onclick="switchMainTab('draw')">Draw</button>
+  <button class="main-tab" id="tab-scores" onclick="switchMainTab('scores')">Scoreboard</button>
   <button class="main-tab" id="tab-french" onclick="switchMainTab('french')">🇫🇷 French Players</button>
 </div>
 
 <div id="panel-draw">
   <div id="disc-tabs-bar" class="disc-tabs"></div>
   <div id="bracket-content"></div>
+</div>
+
+<div id="panel-scores" style="display:none">
+  <div class="scores-panel">
+    <div id="scores-content"></div>
+  </div>
 </div>
 
 <div id="panel-french" style="display:none">
@@ -200,51 +238,53 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 
 <script>
 // ─── TOURNAMENT REGISTRY ────────────────────────────────────────────────────
-// To update for future tournaments: find tmtId in the BWF page URL
-// e.g. bwfworldtour.bwfbadminton.com/tournament/XXXX/...
-// tmtCode comes from the day-matches network request: tournamentCode=...
 const TOURNAMENTS = {
-  'malaysia-2026':        { name:'Malaysia Open 2026',        level:'Super 1000', location:'Kuala Lumpur, Malaysia',  tmtId:5510, tmtCode:'PLACEHOLDER', badge:'s1000' },
-  'all-england-2026':     { name:'All England Open 2026',     level:'Super 1000', location:'Birmingham, England',     tmtId:5515, tmtCode:'1A1AB550-BF1E-4CE9-A774-82414E3D4405', badge:'s1000' },
-  'indonesia-open-2026':  { name:'Indonesia Open 2026',       level:'Super 1000', location:'Jakarta, Indonesia',      tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s1000' },
-  'china-open-2026':      { name:'China Open 2026',           level:'Super 1000', location:'Changzhou, China',        tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s1000' },
-  'india-open-2026':      { name:'India Open 2026',           level:'Super 750',  location:'New Delhi, India',        tmtId:5511, tmtCode:'PLACEHOLDER', badge:'s750' },
-  'singapore-open-2026':  { name:'Singapore Open 2026',       level:'Super 750',  location:'Singapore',               tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s750' },
-  'japan-open-2026':      { name:'Japan Open 2026',           level:'Super 750',  location:'Tokyo, Japan',            tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s750' },
-  'china-masters-2026':   { name:'China Masters 2026',        level:'Super 750',  location:'Shenzhen, China',         tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s750' },
-  'denmark-open-2026':    { name:'Denmark Open 2026',         level:'Super 750',  location:'Odense, Denmark',         tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s750' },
-  'french-open-2026':     { name:'French Open 2026',          level:'Super 750',  location:'Paris, France',           tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s750' },
-  'indonesia-masters-2026':{ name:'Indonesia Masters 2026',   level:'Super 500',  location:'Jakarta, Indonesia',      tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
-  'thailand-open-2026':   { name:'Thailand Open 2026',        level:'Super 500',  location:'Bangkok, Thailand',       tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
-  'malaysia-masters-2026':{ name:'Malaysia Masters 2026',     level:'Super 500',  location:'Kuala Lumpur, Malaysia',  tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
-  'australia-open-2026':  { name:'Australian Open 2026',      level:'Super 500',  location:'Sydney, Australia',       tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
-  'arctic-open-2026':     { name:'Arctic Open 2026',          level:'Super 500',  location:'Vantaa, Finland',         tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
-  'hylo-open-2026':       { name:'Hylo Open 2026',            level:'Super 500',  location:'Saarbrücken, Germany',    tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
-  'japan-masters-2026':   { name:'Japan Masters 2026',        level:'Super 500',  location:'Kumamoto, Japan',         tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
-  'hong-kong-open-2026':  { name:'Hong Kong Open 2026',       level:'Super 500',  location:'Hong Kong',               tmtId:0,    tmtCode:'PLACEHOLDER', badge:'s500' },
+  'malaysia-2026':        { name:'Malaysia Open 2026',        level:'Super 1000', location:'Kuala Lumpur, Malaysia',  hasProxy:false, badge:'s1000' },
+  'all-england-2026':     { name:'All England Open 2026',     level:'Super 1000', location:'Birmingham, England',     hasProxy:true,  badge:'s1000' },
+  'indonesia-open-2026':  { name:'Indonesia Open 2026',       level:'Super 1000', location:'Jakarta, Indonesia',      hasProxy:false, badge:'s1000' },
+  'china-open-2026':      { name:'China Open 2026',           level:'Super 1000', location:'Changzhou, China',        hasProxy:false, badge:'s1000' },
+  'india-open-2026':      { name:'India Open 2026',           level:'Super 750',  location:'New Delhi, India',        hasProxy:false, badge:'s750' },
+  'singapore-open-2026':  { name:'Singapore Open 2026',       level:'Super 750',  location:'Singapore',               hasProxy:false, badge:'s750' },
+  'japan-open-2026':      { name:'Japan Open 2026',           level:'Super 750',  location:'Tokyo, Japan',            hasProxy:false, badge:'s750' },
+  'china-masters-2026':   { name:'China Masters 2026',        level:'Super 750',  location:'Shenzhen, China',         hasProxy:false, badge:'s750' },
+  'denmark-open-2026':    { name:'Denmark Open 2026',         level:'Super 750',  location:'Odense, Denmark',         hasProxy:false, badge:'s750' },
+  'french-open-2026':     { name:'French Open 2026',          level:'Super 750',  location:'Paris, France',           hasProxy:false, badge:'s750' },
+  'indonesia-masters-2026':{ name:'Indonesia Masters 2026',   level:'Super 500',  location:'Jakarta, Indonesia',      hasProxy:false, badge:'s500' },
+  'thailand-open-2026':   { name:'Thailand Open 2026',        level:'Super 500',  location:'Bangkok, Thailand',       hasProxy:false, badge:'s500' },
+  'malaysia-masters-2026':{ name:'Malaysia Masters 2026',     level:'Super 500',  location:'Kuala Lumpur, Malaysia',  hasProxy:false, badge:'s500' },
+  'australia-open-2026':  { name:'Australian Open 2026',      level:'Super 500',  location:'Sydney, Australia',       hasProxy:false, badge:'s500' },
+  'arctic-open-2026':     { name:'Arctic Open 2026',          level:'Super 500',  location:'Vantaa, Finland',         hasProxy:false, badge:'s500' },
+  'hylo-open-2026':       { name:'Hylo Open 2026',            level:'Super 500',  location:'Saarbrücken, Germany',    hasProxy:false, badge:'s500' },
+  'japan-masters-2026':   { name:'Japan Masters 2026',        level:'Super 500',  location:'Kumamoto, Japan',         hasProxy:false, badge:'s500' },
+  'hong-kong-open-2026':  { name:'Hong Kong Open 2026',       level:'Super 500',  location:'Hong Kong',               hasProxy:false, badge:'s500' },
 };
 
+const PROXY_URL = 'https://bwf-proxy.samuel-2ab.workers.dev';
+
 const DRAW_LIST = [
-  { code:'1', label:"Men's Singles" },
-  { code:'2', label:"Women's Singles" },
-  { code:'3', label:"Men's Doubles" },
-  { code:'4', label:"Women's Doubles" },
-  { code:'5', label:"Mixed Doubles" },
+  { code:'1', label:"Men's Singles",    short:'MS' },
+  { code:'2', label:"Women's Singles",  short:'WS' },
+  { code:'3', label:"Men's Doubles",    short:'MD' },
+  { code:'4', label:"Women's Doubles",  short:'WD' },
+  { code:'5', label:"Mixed Doubles",    short:'XD' },
 ];
-const ROUND_NAMES = { R64:'R64', R32:'R32', R16:'R16', QF:'Quarter-Final', SF:'Semi-Final', F:'Final', Final:'Final' };
+
+// Round order for bracket columns (left → right)
+const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
+const ROUND_NAMES      = { R64:'R64', R32:'R32', R16:'R16', QF:'QF', SF:'SF', F:'Final', Final:'Final' };
 const ROUND_NAMES_LONG = { R64:'Round of 64', R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Final', SF:'Semi-Final', F:'Final', Final:'Final' };
-const CARD_H = 66;
-const CARD_W = 196;
+
+const CARD_H   = 66;
+const CARD_W   = 196;
 const GAP_BASE = 8;
 
-let activeTmt = 'all-england-2026';
-let activeDraw = '1';
-let activeMainTab = 'draw';
-let drawCache = {};
-let allDrawsData = {};
-let autoTimer = null;
+let activeTmt      = 'all-england-2026';
+let activeDraw     = '1';
+let activeMainTab  = 'draw';
+let cachedData     = null;   // raw /data response, shared across all draws
+let autoTimer      = null;
 
-// ─── INIT ───────────────────────────────────────────────────────────────────
+// ─── INIT ────────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
   buildDiscTabs();
   loadCurrentTournament();
@@ -252,35 +292,36 @@ window.addEventListener('load', () => {
 
 function onTmtChange() {
   activeTmt = document.getElementById('tmt-select').value;
-  const tmt = TOURNAMENTS[activeTmt];
-  document.getElementById('tmt-level-badge').textContent = tmt.level;
-  document.getElementById('tmt-level-badge').className = `tmt-badge badge-${tmt.badge}`;
-  document.getElementById('tmt-location').textContent = tmt.location;
-  drawCache = {};
-  allDrawsData = {};
+  updateTmtUI();
+  cachedData = null;
   clearInterval(autoTimer);
   loadCurrentTournament();
 }
 
-function loadCurrentTournament() {
+function updateTmtUI() {
   const tmt = TOURNAMENTS[activeTmt];
   document.getElementById('tmt-level-badge').textContent = tmt.level;
   document.getElementById('tmt-level-badge').className = `tmt-badge badge-${tmt.badge}`;
   document.getElementById('tmt-location').textContent = tmt.location;
-  if (activeMainTab === 'draw') {
-    fetchDraw(activeDraw);
-  } else {
-    loadAllDrawsForFrench();
-  }
+}
+
+function loadCurrentTournament() {
+  updateTmtUI();
+  if (activeMainTab === 'draw') fetchAndRenderDraw();
+  else if (activeMainTab === 'scores') fetchAndRenderScores();
+  else fetchAndRenderFrench();
 }
 
 function switchMainTab(tab) {
   activeMainTab = tab;
   document.getElementById('tab-draw').classList.toggle('active', tab === 'draw');
+  document.getElementById('tab-scores').classList.toggle('active', tab === 'scores');
   document.getElementById('tab-french').classList.toggle('active', tab === 'french');
-  document.getElementById('panel-draw').style.display = tab === 'draw' ? 'block' : 'none';
+  document.getElementById('panel-draw').style.display   = tab === 'draw'   ? 'block' : 'none';
+  document.getElementById('panel-scores').style.display = tab === 'scores' ? 'block' : 'none';
   document.getElementById('panel-french').style.display = tab === 'french' ? 'block' : 'none';
-  if (tab === 'french') loadAllDrawsForFrench();
+  if (tab === 'french') fetchAndRenderFrench();
+  else if (tab === 'scores') fetchAndRenderScores();
 }
 
 function buildDiscTabs() {
@@ -294,89 +335,269 @@ function switchDraw(code, btn) {
   document.querySelectorAll('.disc-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   activeDraw = code;
-  fetchDraw(code);
+  // Data already cached — just re-render the selected draw
+  if (cachedData) {
+    renderBracket(cachedData, activeDraw);
+  } else {
+    fetchAndRenderDraw();
+  }
 }
 
 function refreshCurrent() {
-  delete drawCache[activeDraw];
-  if (activeMainTab === 'draw') fetchDraw(activeDraw);
-  else { allDrawsData = {}; drawCache = {}; loadAllDrawsForFrench(); }
+  cachedData = null;
+  clearInterval(autoTimer);
+  if (activeMainTab === 'draw') fetchAndRenderDraw();
+  else fetchAndRenderFrench();
 }
 
-// ─── FETCH ──────────────────────────────────────────────────────────────────
-async function fetchDraw(code) {
-  if (drawCache[code]) { renderBracket(drawCache[code]); return; }
+// ─── FETCH ───────────────────────────────────────────────────────────────────
+// The worker's /data endpoint returns:
+//   { matches: { "1": { "matchCode": {matchObj}, ... }, "2": {...}, ... } }
+// drawCode "1"=MS "2"=WS "3"=MD "4"=WD "5"=XD
+
+async function fetchData() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.tmtId || tmt.tmtCode === 'PLACEHOLDER') {
+  if (!tmt.hasProxy) return null;
+  const r = await fetch(`${PROXY_URL}/data`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return await r.json();
+}
+
+async function fetchAndRenderDraw() {
+  const tmt = TOURNAMENTS[activeTmt];
+  if (!tmt.hasProxy) {
     document.getElementById('bracket-content').innerHTML = `<div class="center">
       <div class="ctext" style="color:var(--red)">Tournament Not Yet Available</div>
-      <div class="ctext">This tournament hasn't started yet. The draw data will appear here once it goes live.</div>
+      <div class="ctext">Live data for this tournament isn't set up yet. Select All England 2026 to see the live draw.</div>
     </div>`;
     return;
   }
-  document.getElementById('bracket-content').innerHTML = `<div class="center"><div class="spinner"></div><div class="ctext">Loading draw...</div></div>`;
-  try {
-    const r = await fetch('https://bwf-proxy.samuel-2ab.workers.dev/', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ tmtTab:'draw', tmtId:tmt.tmtId, drawId:code })
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const d = await r.json();
-    drawCache[code] = d;
-    renderBracket(d);
-    clearInterval(autoTimer);
-    if ((d.matches||[]).some(m => m.matchStatus==='P')) {
-      autoTimer = setInterval(() => { delete drawCache[activeDraw]; fetchDraw(activeDraw); }, 30000);
+
+  if (!cachedData) {
+    document.getElementById('bracket-content').innerHTML = `<div class="center"><div class="spinner"></div><div class="ctext">Loading draw...</div></div>`;
+    try {
+      cachedData = await fetchData();
+    } catch(e) {
+      document.getElementById('bracket-content').innerHTML = `<div class="center">
+        <div class="ctext" style="color:var(--red)">Could not load draw data</div>
+        <div class="ctext">${e.message}</div>
+      </div>`;
+      return;
     }
-  } catch(e) {
-    document.getElementById('bracket-content').innerHTML = `<div class="center">
-      <div class="ctext" style="color:var(--red)">Could not load draw</div>
-      <div class="ctext">${e.message.includes('fetch')||e.message.includes('Network')
-        ? 'CORS blocked — install a browser CORS extension (e.g. "CORS Unblock") or access from GitHub Pages.'
-        : e.message}</div>
-    </div>`;
+  }
+
+  renderBracket(cachedData, activeDraw);
+
+  // Auto-refresh if any match is live
+  clearInterval(autoTimer);
+  const drawMatches = Object.values((cachedData.matches || {})[activeDraw] || {});
+  if (drawMatches.some(m => m.matchStatus === 'P')) {
+    autoTimer = setInterval(async () => {
+      cachedData = null;
+      await fetchAndRenderDraw();
+    }, 30000);
   }
 }
 
-async function loadAllDrawsForFrench() {
+async function fetchAndRenderFrench() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.tmtId || tmt.tmtCode === 'PLACEHOLDER') {
+  if (!tmt.hasProxy) {
     document.getElementById('fp-sub').textContent = 'Tournament not yet available.';
     document.getElementById('fp-grid').innerHTML = `<div class="fp-empty">No data yet for this tournament.</div>`;
     return;
   }
-  document.getElementById('fp-sub').textContent = 'Loading all draws...';
-  document.getElementById('fp-grid').innerHTML = `<div class="center"><div class="spinner"></div></div>`;
 
-  // Fetch all 5 disciplines
-  const fetches = DRAW_LIST.map(async d => {
-    if (allDrawsData[d.code]) return;
+  if (!cachedData) {
+    document.getElementById('fp-sub').textContent = 'Loading...';
+    document.getElementById('fp-grid').innerHTML = `<div class="center"><div class="spinner"></div></div>`;
     try {
-      const r = await fetch('https://bwf-proxy.samuel-2ab.workers.dev/', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ tmtTab:'draw', tmtId:tmt.tmtId, drawId:d.code })
-      });
-      if (!r.ok) return;
-      const data = await r.json();
-      allDrawsData[d.code] = data;
-      drawCache[d.code] = data;
-    } catch(e) {}
+      cachedData = await fetchData();
+    } catch(e) {
+      document.getElementById('fp-sub').textContent = 'Failed to load data.';
+      document.getElementById('fp-grid').innerHTML = '';
+      return;
+    }
+  }
+
+  renderFrenchPanel(cachedData);
+}
+
+
+async function fetchAndRenderScores() {
+  const tmt = TOURNAMENTS[activeTmt];
+  if (!tmt.hasProxy) {
+    document.getElementById('scores-content').innerHTML = `<div class="center"><div class="ctext">No data for this tournament yet.</div></div>`;
+    return;
+  }
+  if (!cachedData) {
+    document.getElementById('scores-content').innerHTML = `<div class="center"><div class="spinner"></div><div class="ctext">Loading scores...</div></div>`;
+    try { cachedData = await fetchData(); } catch(e) {
+      document.getElementById('scores-content').innerHTML = `<div class="center"><div class="ctext" style="color:var(--red)">${e.message}</div></div>`;
+      return;
+    }
+  }
+  renderScoreboard(cachedData);
+}
+
+function renderScoreboard(data) {
+  const allMatches = data.matches || {};
+  const DISC_LABELS = {'1':"MS",'2':"WS",'3':"MD",'4':"WD",'5':"XD"};
+  const DISC_FULL   = {'1':"Men's Singles",'2':"Women's Singles",'3':"Men's Doubles",'4':"Women's Doubles",'5':"Mixed Doubles"};
+  const ROUND_ORDER_SB = ['F','Final','SF','QF','R16','R32','R64'];
+
+  // Flatten all matches, attach drawCode
+  let all = [];
+  Object.entries(allMatches).forEach(([dc, matches]) => {
+    Object.values(matches).forEach(m => {
+      all.push({ ...m, drawCode: dc });
+    });
   });
-  await Promise.all(fetches);
-  renderFrenchPanel();
+
+  if (!all.length) {
+    document.getElementById('scores-content').innerHTML = `<div class="center"><div class="ctext">No matches found.</div></div>`;
+    return;
+  }
+
+  // Group by status: live → upcoming → finished
+  const live     = all.filter(m => m.matchStatus === 'P');
+  const upcoming = all.filter(m => m.matchStatus === 'N' || m.matchStatus === 'S');
+  const finished = all.filter(m => m.matchStatus === 'F' || m.matchStatus === 'C' || m.matchStatus === 'W');
+
+  // Sort finished by round (latest first), then by matchTime desc
+  finished.sort((a,b) => {
+    const ra = ROUND_ORDER_SB.indexOf(a.roundName); const rb = ROUND_ORDER_SB.indexOf(b.roundName);
+    if (ra !== rb) return ra - rb;
+    return (b.matchTime||'').localeCompare(a.matchTime||'');
+  });
+  upcoming.sort((a,b) => (a.matchTime||'').localeCompare(b.matchTime||''));
+
+  let html = '';
+
+  function renderSBRow(m) {
+    const isLive = m.matchStatus === 'P';
+    const isDone = m.matchStatus === 'F' || m.matchStatus === 'C' || m.matchStatus === 'W';
+    const w = m.winner;
+    const hasFrench = isFrenchTeam(m.team1) || isFrenchTeam(m.team2);
+    const disc = DISC_LABELS[m.drawCode] || '?';
+    const rnd  = ROUND_NAMES[m.roundName] || m.roundName;
+    const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (m.matchTime ? m.matchTime.slice(11,16) : '—');
+    const statusClass = isLive ? 'sst-live' : isDone ? 'sst-ft' : 'sst-next';
+    const bwfUrl = m.tournamentCode ? `https://bwfworldtour.bwfbadminton.com/tournament/${m.tournamentCode}/results` : '#';
+
+    function teamRow(team, num) {
+      const isW = w === num;
+      const flag = team?.countryFlagUrl || '';
+      const name = shortName(team) || 'TBD';
+      const seed = num === 1 ? m.team1seed : m.team2seed;
+      const french = isFrenchTeam(team);
+      const scores = m.score || [];
+      let nc = 'sr-name';
+      if (name === 'TBD') nc += '';
+      else if (isW) nc += ' sn-won';
+      else if (french) nc += ' sn-french';
+
+      const scoreHtml = scores.map((s,i) => {
+        const v = num===1 ? s.home : s.away;
+        const o = num===1 ? s.away : s.home;
+        const isLastSet = isLive && i === scores.length - 1;
+        let cls = 'sr-set';
+        if (isLastSet) cls += ' ss-live';
+        else if (v > o) cls += ' ss-w';
+        return `<span class="${cls}">${v}</span>`;
+      }).join('');
+
+      return `<div class="sr-team">
+        ${flag ? `<img class="sr-flag" src="${flag}" alt="">` : `<div class="sr-flag"></div>`}
+        <span class="sr-seed">${seed ? `[${seed}]` : ''}</span>
+        <span class="${nc}">${name}</span>
+        <div class="sr-scores" style="visibility:${num===2?'visible':'hidden'};position:${num===2?'static':'absolute'}">${scoreHtml}</div>
+      </div>`;
+    }
+
+    // Build unified score column with both rows' scores side by side
+    function scoreBlock(team, num) {
+      const scores = m.score || [];
+      return scores.map((s,i) => {
+        const v = num===1 ? s.home : s.away;
+        const o = num===1 ? s.away : s.home;
+        const isLastSet = isLive && i === scores.length - 1;
+        const isW = w === num;
+        let cls = 'sr-set';
+        if (isLastSet) cls += ' ss-live';
+        else if (v > o) cls += ' ss-w';
+        return `<span class="${cls}">${v}</span>`;
+      }).join('');
+    }
+
+    const t1French = isFrenchTeam(m.team1);
+    const t2French = isFrenchTeam(m.team2);
+    const t1Won = w === 1 && isDone;
+    const t2Won = w === 2 && isDone;
+    const t1Name = shortName(m.team1) || 'TBD';
+    const t2Name = shortName(m.team2) || 'TBD';
+    const t1Seed = m.team1seed ? `[${m.team1seed}]` : '';
+    const t2Seed = m.team2seed ? `[${m.team2seed}]` : '';
+    const t1Flag = m.team1?.countryFlagUrl || '';
+    const t2Flag = m.team2?.countryFlagUrl || '';
+
+    return `<div class="score-row${isLive?' sr-live':''}${hasFrench?' sr-french':''}" onclick="window.open('${bwfUrl}','_blank')">
+      <div class="sr-disc">${disc}</div>
+      <div class="sr-rnd">${rnd}</div>
+      <div class="sr-teams">
+        <div class="sr-team">
+          ${t1Flag?`<img class="sr-flag" src="${t1Flag}" alt="">`:`<div class="sr-flag"></div>`}
+          <span class="sr-seed">${t1Seed}</span>
+          <span class="sr-name${t1Won?' sn-won':''}${t1French?' sn-french':''}">${t1Name}</span>
+        </div>
+        <div class="sr-team">
+          ${t2Flag?`<img class="sr-flag" src="${t2Flag}" alt="">`:`<div class="sr-flag"></div>`}
+          <span class="sr-seed">${t2Seed}</span>
+          <span class="sr-name${t2Won?' sn-won':''}${t2French?' sn-french':''}">${t2Name}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;padding:4px 8px;gap:0;flex-shrink:0;border-left:1px solid var(--border)">
+        <div class="sr-team" style="border:none;padding:2px 0">${scoreBlock(m.team1,1)}</div>
+        <div class="sr-team" style="border:none;padding:2px 0">${scoreBlock(m.team2,2)}</div>
+      </div>
+      <div class="sr-status ${statusClass}" style="display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border);padding:4px 10px;align-self:stretch">
+        ${statusLabel}${isLive&&m.time?`<br><span style="font-size:9px;color:#555">${m.time}</span>`:''}
+      </div>
+      <div class="sr-court${isLive?' ct-live':''}" style="display:flex;align-items:center">${m.courtName||''}</div>
+    </div>`;
+  }
+
+  if (live.length) {
+    html += `<div class="scores-section">
+      <div class="scores-section-hdr">Live Now <span class="live-count">${live.length} LIVE</span></div>
+      ${live.map(renderSBRow).join('')}
+    </div>`;
+  }
+
+  if (upcoming.length) {
+    html += `<div class="scores-section">
+      <div class="scores-section-hdr">Upcoming</div>
+      ${upcoming.map(renderSBRow).join('')}
+    </div>`;
+  }
+
+  if (finished.length) {
+    html += `<div class="scores-section">
+      <div class="scores-section-hdr">Completed</div>
+      ${finished.map(renderSBRow).join('')}
+    </div>`;
+  }
+
+  document.getElementById('scores-content').innerHTML = html;
 }
 
 // ─── FRENCH PLAYERS PANEL ────────────────────────────────────────────────────
-function renderFrenchPanel() {
-  const tmt = TOURNAMENTS[activeTmt];
+function renderFrenchPanel(data) {
+  const allMatches = data.matches || {};
   const frenchPlayers = {}; // key: playerId, value: { player, matches[], discipline }
 
   DRAW_LIST.forEach(disc => {
-    const data = allDrawsData[disc.code];
-    if (!data) return;
-    const matches = data.matches || [];
+    const drawMatches = allMatches[disc.code] || {};
+    const matches = Object.values(drawMatches);
     matches.forEach(match => {
       [match.team1, match.team2].forEach((team, ti) => {
         if (!team || !team.players) return;
@@ -503,34 +724,56 @@ function shortName(team) {
   return team.players.map(p => p.nameShort2||p.lastName||p.nameDisplay).join(' / ');
 }
 
-function getGap(col) {
-  if (col === 0) return GAP_BASE;
-  return Math.pow(2, col) * (CARD_H + GAP_BASE) - CARD_H;
+const ROUND_ORDER_LIST = ['R64','R32','R16','QF','SF','F','Final'];
+function getGap(roundName) {
+  const col = ROUND_ORDER_LIST.indexOf(roundName);
+  const c = col < 0 ? 0 : col;
+  if (c === 0) return GAP_BASE;
+  return Math.pow(2, c) * (CARD_H + GAP_BASE) - CARD_H;
 }
-function getTopPad(col) {
-  if (col === 0) return 0;
-  return (getGap(col) - getGap(col-1)) / 2;
+function getTopPad(roundName) {
+  const col = ROUND_ORDER_LIST.indexOf(roundName);
+  const c = col < 0 ? 0 : col;
+  if (c === 0) return 0;
+  const prev = ROUND_ORDER_LIST[c - 1];
+  return (getGap(roundName) - getGap(prev)) / 2;
 }
 
-function renderBracket(data) {
-  const results = data.results || {};
-  if (!Object.keys(results).length) {
+function renderBracket(data, drawCode) {
+  // Real /data structure: { matches: { "1": { "matchCode": matchObj, ... }, ... } }
+  const drawMatches = (data.matches || {})[drawCode] || {};
+  const matchList = Object.values(drawMatches);
+
+  if (!matchList.length) {
     document.getElementById('bracket-content').innerHTML = `<div class="center"><div class="ctext">No draw data yet for this discipline.</div></div>`;
     return;
   }
 
+  // Group matches by round, sort within each round by matchTime then by code
   const roundCols = {};
-  Object.entries(results).forEach(([key, val]) => {
-    const [col, row] = key.split('-').map(Number);
-    if (!roundCols[col]) roundCols[col] = { slots:{} };
-    roundCols[col].slots[row] = val.match;
+  matchList.forEach(match => {
+    const rn = match.roundName || 'F';
+    if (!roundCols[rn]) roundCols[rn] = { roundName: rn, slots: {} };
+    const slotCount = Object.keys(roundCols[rn].slots).length;
+    roundCols[rn].slots[slotCount] = match;
   });
 
-  const cols = Object.keys(roundCols).map(Number).sort((a,b)=>a-b);
-  cols.forEach(c => {
-    const sample = Object.values(roundCols[c].slots)[0];
-    roundCols[c].roundName = sample ? (sample.roundName||'F') : 'F';
+  // Sort matches within each round by scheduled time, then by numeric match code
+  Object.values(roundCols).forEach(rc => {
+    const sorted = Object.values(rc.slots).sort((a, b) => {
+      // Use oopRound (play order index from BWF) as the primary sort key
+      const oa = parseInt(a.oopRound) || 999;
+      const ob = parseInt(b.oopRound) || 999;
+      if (oa !== ob) return oa - ob;
+      return parseInt(a.code) - parseInt(b.code);
+    });
+    rc.slots = {};
+    sorted.forEach((m, i) => { rc.slots[i] = m; });
   });
+
+  // Order columns: R64 → R32 → R16 → QF → SF → F
+  const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
+  const cols = Object.keys(roundCols).sort((a,b) => ROUND_ORDER.indexOf(a) - ROUND_ORDER.indexOf(b));
 
   const CONN_W = 20;
   const JOIN_W = 14;
@@ -611,8 +854,9 @@ function renderCard(match, isFinal) {
   const isDone = match.matchStatus==='F'||match.matchStatus==='C'||match.matchStatus==='W';
   const w = match.winner;
   const hasFrench = isFrenchTeam(match.team1)||isFrenchTeam(match.team2);
-  const tmt = TOURNAMENTS[activeTmt];
-  const bwfUrl = `https://bwfworldtour.bwfbadminton.com/tournament/${tmt.tmtCode}/results`;
+  const bwfUrl = match.tournamentCode
+    ? `https://bwfworldtour.bwfbadminton.com/tournament/${match.tournamentCode}/results`
+    : `https://bwfworldtour.bwfbadminton.com`;
   const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (match.matchTime ? match.matchTime.slice(11,16) : '—');
   const statusClass = isLive ? 'st-live' : isDone ? 'st-ft' : 'st-next';
 
