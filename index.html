@@ -316,7 +316,7 @@ async function fetchDraw(code) {
   }
   document.getElementById('bracket-content').innerHTML = `<div class="center"><div class="spinner"></div><div class="ctext">Loading draw...</div></div>`;
   try {
-    const r = await fetch('https://extranet-lv.bwfbadminton.com/api/vue-tournament-draw-data', {
+    const r = await fetch('https://bwf-proxy.samuel-2ab.workers.dev/', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ tmtTab:'draw', tmtId:tmt.tmtId, drawId:code })
@@ -353,7 +353,7 @@ async function loadAllDrawsForFrench() {
   const fetches = DRAW_LIST.map(async d => {
     if (allDrawsData[d.code]) return;
     try {
-      const r = await fetch('https://extranet-lv.bwfbadminton.com/api/vue-tournament-draw-data', {
+      const r = await fetch('https://bwf-proxy.samuel-2ab.workers.dev/', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({ tmtTab:'draw', tmtId:tmt.tmtId, drawId:d.code })
