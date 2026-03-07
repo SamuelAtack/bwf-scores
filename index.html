@@ -62,7 +62,7 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 .round-body{display:flex;flex-direction:column;}
 
 /* MATCH CARD */
-.mc{background:var(--surface);border:1px solid var(--border);width:196px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;position:relative;overflow:hidden;flex-shrink:0;}
+.mc{background:var(--surface);border:1px solid var(--border);width:230px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;position:relative;overflow:hidden;flex-shrink:0;}
 .mc:hover{border-color:#555;box-shadow:0 2px 12px rgba(0,0,0,0.5);}
 .mc.mc-live{border-color:rgba(0,230,118,0.35);}
 .mc.mc-live::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--live);}
@@ -72,25 +72,25 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 .mc.mc-empty{background:transparent;border-style:dashed;border-color:#252525;cursor:default;opacity:0.45;}
 .mc.mc-empty:hover{border-color:#252525;box-shadow:none;}
 .mc.mc-french{box-shadow:inset 0 0 0 1px rgba(0,85,164,0.5);}
-.mc-head{display:flex;align-items:center;justify-content:space-between;padding:3px 7px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.mc-head{display:flex;align-items:center;justify-content:space-between;padding:3px 8px;background:var(--surface2);border-bottom:1px solid var(--border);}
 .mc-rnd{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
 .mc-st{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;}
 .mc-st.st-live{color:var(--live);}
 .mc-st.st-ft{color:#555;}
 .mc-st.st-next{color:#3a3a3a;}
-.tr{display:flex;align-items:center;gap:4px;padding:5px 7px;min-height:28px;}
+.tr{display:flex;align-items:center;gap:4px;padding:5px 8px;min-height:28px;}
 .tr+.tr{border-top:1px solid var(--border);}
 .tr.tr-won{background:rgba(255,255,255,0.04);}
 .tr.tr-french{background:rgba(0,85,164,0.08);}
 .tr-flag{width:16px;height:16px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#2a2a2a;}
 .tr-seed{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;color:var(--red);width:16px;text-align:center;flex-shrink:0;}
-.tr-name{flex:1;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);min-width:0;}
+.tr-name{flex:1;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);min-width:0;margin-right:4px;}
 .tr-name.n-won{color:white;font-weight:700;}
 .tr-name.n-on{color:#ccc;}
 .tr-name.n-tbd{color:#2e2e2e;font-style:italic;}
 .tr-name.n-french{color:#5590e8;}
 .tr-scores{display:flex;gap:2px;flex-shrink:0;}
-.sc{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;min-width:17px;text-align:right;color:#3a3a3a;line-height:1;}
+.sc{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;min-width:18px;text-align:right;color:#3a3a3a;line-height:1;}
 .sc.sc-w{color:#ddd;}
 .sc.sc-live{color:var(--live);}
 .vjoins{flex-shrink:0;overflow:visible;}
@@ -240,7 +240,7 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 // ─── TOURNAMENT REGISTRY ────────────────────────────────────────────────────
 const TOURNAMENTS = {
   'malaysia-2026':        { name:'Malaysia Open 2026',        level:'Super 1000', location:'Kuala Lumpur, Malaysia',  hasProxy:false, badge:'s1000' },
-  'all-england-2026':     { name:'All England Open 2026',     level:'Super 1000', location:'Birmingham, England',     hasProxy:true,  badge:'s1000' },
+  'all-england-2026':     { name:'All England Open 2026',     level:'Super 1000', location:'Birmingham, England',     hasProxy:true,  badge:'s1000', tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5515/yonex-all-england-open-badminton-championships-2026/results' },
   'indonesia-open-2026':  { name:'Indonesia Open 2026',       level:'Super 1000', location:'Jakarta, Indonesia',      hasProxy:false, badge:'s1000' },
   'china-open-2026':      { name:'China Open 2026',           level:'Super 1000', location:'Changzhou, China',        hasProxy:false, badge:'s1000' },
   'india-open-2026':      { name:'India Open 2026',           level:'Super 750',  location:'New Delhi, India',        hasProxy:false, badge:'s750' },
@@ -274,8 +274,8 @@ const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
 const ROUND_NAMES      = { R64:'R64', R32:'R32', R16:'R16', QF:'QF', SF:'SF', F:'Final', Final:'Final' };
 const ROUND_NAMES_LONG = { R64:'Round of 64', R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Final', SF:'Semi-Final', F:'Final', Final:'Final' };
 
-const CARD_H   = 66;
-const CARD_W   = 196;
+const CARD_H   = 70;
+const CARD_W   = 230;
 const GAP_BASE = 8;
 
 let activeTmt      = 'all-england-2026';
@@ -482,7 +482,7 @@ function renderScoreboard(data) {
     const rnd  = ROUND_NAMES[m.roundName] || m.roundName;
     const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (m.matchTime ? m.matchTime.slice(11,16) : '—');
     const statusClass = isLive ? 'sst-live' : isDone ? 'sst-ft' : 'sst-next';
-    const bwfUrl = m.tournamentCode ? `https://bwfworldtour.bwfbadminton.com/tournament/${m.tournamentCode}/results` : '#';
+    const bwfUrl = TOURNAMENTS[activeTmt].tmtUrl || 'https://bwfworldtour.bwfbadminton.com';
 
     function teamRow(team, num) {
       const isW = w === num;
@@ -758,15 +758,10 @@ function renderBracket(data, drawCode) {
     roundCols[rn].slots[slotCount] = match;
   });
 
-  // Sort matches within each round by scheduled time, then by numeric match code
+  // Sort matches within each round by numeric match code (bracket position order).
+  // BWF assigns codes sequentially in bracket order, so code order = bracket slot order.
   Object.values(roundCols).forEach(rc => {
-    const sorted = Object.values(rc.slots).sort((a, b) => {
-      // Use oopRound (play order index from BWF) as the primary sort key
-      const oa = parseInt(a.oopRound) || 999;
-      const ob = parseInt(b.oopRound) || 999;
-      if (oa !== ob) return oa - ob;
-      return parseInt(a.code) - parseInt(b.code);
-    });
+    const sorted = Object.values(rc.slots).sort((a, b) => parseInt(a.code) - parseInt(b.code));
     rc.slots = {};
     sorted.forEach((m, i) => { rc.slots[i] = m; });
   });
@@ -775,8 +770,8 @@ function renderBracket(data, drawCode) {
   const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
   const cols = Object.keys(roundCols).sort((a,b) => ROUND_ORDER.indexOf(a) - ROUND_ORDER.indexOf(b));
 
-  const CONN_W = 20;
-  const JOIN_W = 14;
+  const CONN_W = 24;
+  const JOIN_W = 18;
   let html = `<div class="bracket-scroll"><div class="bracket" style="padding-top:4px">`;
 
   cols.forEach((col, ci) => {
@@ -854,9 +849,7 @@ function renderCard(match, isFinal) {
   const isDone = match.matchStatus==='F'||match.matchStatus==='C'||match.matchStatus==='W';
   const w = match.winner;
   const hasFrench = isFrenchTeam(match.team1)||isFrenchTeam(match.team2);
-  const bwfUrl = match.tournamentCode
-    ? `https://bwfworldtour.bwfbadminton.com/tournament/${match.tournamentCode}/results`
-    : `https://bwfworldtour.bwfbadminton.com`;
+  const bwfUrl = TOURNAMENTS[activeTmt].tmtUrl || 'https://bwfworldtour.bwfbadminton.com';
   const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (match.matchTime ? match.matchTime.slice(11,16) : '—');
   const statusClass = isLive ? 'st-live' : isDone ? 'st-ft' : 'st-next';
 
