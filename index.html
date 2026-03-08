@@ -646,7 +646,7 @@ async function fetchAndRenderDraw() {
 function patchBracket(data, drawCode) {
   const drawMatches = (data.matches || {})[drawCode] || {};
   Object.values(drawMatches).forEach(match => {
-    const card = document.querySelector(`.mc[data-code="${match.code}"]`);
+    const card = document.querySelector(`.mc[data-matchkey="${match.drawCode}_${match.code}"]`);
     if (!card) return;
 
     const isLive = match.matchStatus === 'P';
@@ -1261,7 +1261,7 @@ function renderCard(match, isFinal) {
   const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (match.matchTime ? match.matchTime.slice(11,16) : '—');
   const statusClass = isLive ? 'st-live' : isDone ? 'st-ft' : 'st-next';
 
-  return `<div class="mc${isLive?' mc-live':''}${isFinal?' mc-final':''}${hasFrench?' mc-french':''}" data-code="${match.code}" style="height:${CARD_H}px" onclick="window.open('${bwfUrl}','_blank')">
+  return `<div class="mc${isLive?' mc-live':''}${isFinal?' mc-final':''}${hasFrench?' mc-french':''}" data-matchkey="${match.drawCode}_${match.code}" style="height:${CARD_H}px" onclick="window.open('${bwfUrl}','_blank')">
     <div class="mc-head">
       <span class="mc-rnd">${ROUND_NAMES[match.roundName]||match.roundName}</span>
       <span class="mc-st ${statusClass}" data-live-status>${statusLabel}</span>
