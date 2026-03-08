@@ -420,32 +420,35 @@ async function fetchData() {
     return await r.json();
   }
 
-  // For all other tournaments: worker resolves UUID from numeric tmtId automatically
+  // Fetch once per day (no drawCode filter) — BWF returns all draws for that day
+  // Much more reliable than per-draw fetching which can silently return nothing
   const allMatches = { '1':{}, '2':{}, '3':{}, '4':{}, '5':{} };
-  const draws = ['1','2','3','4','5'];
+  const params = new URLSearchParams();
+  if (tmt.tmtCode) params.set('tmtCode', tmt.tmtCode);
+  if (tmt.tmtId)   params.set('tmtId',   tmt.tmtId);
 
-  const tasks = [];
-  for (const date of tmt.dates) {
-    for (const draw of draws) {
-      tasks.push(
-        fetch(`${PROXY_URL}/fetch?tmtCode=${tmt.tmtCode || ''}&tmtId=${tmt.tmtId}&date=${date}&drawCode=${draw}`)
-          .then(r => r.ok ? r.json() : null)
-          .then(json => {
-            if (!json) return;
-            if (json.error) { console.warn('BWF fetch error:', json.error); return; }
-            const items = json.results || json.matches || json || [];
-            const list = Array.isArray(items) ? items : Object.values(items);
-            list.forEach(m => {
-              const dc = String(m.drawCode || draw);
-              const key = m.code || m.id;
-              if (key) allMatches[dc][key] = m;
-            });
-          })
-          .catch(() => {})
-      );
-    }
-  }
+  const tasks = tmt.dates.map(date => {
+    const url = `${PROXY_URL}/fetch?${params}&date=${date}`;
+    return fetch(url)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => {
+        if (!json || json.error) { if (json?.error) console.warn('BWF:', json.error); return; }
+        const items = json.results || [];
+        const list = Array.isArray(items) ? items : Object.values(items);
+        list.forEach(m => {
+          const dc = String(m.drawCode ?? '');
+          if (!dc || !allMatches[dc]) return; // skip if drawCode not in 1-5
+          const key = String(m.code || m.id || '');
+          if (key) allMatches[dc][key] = m;
+        });
+      })
+      .catch(e => console.warn('Fetch failed for', date, e));
+  });
+
   await Promise.all(tasks);
+  // Debug: log match counts per draw
+  const counts = Object.fromEntries(Object.entries(allMatches).map(([k,v])=>[k,Object.keys(v).length]));
+  console.log('[BWF] Match counts by draw:', counts, '| Tournament:', activeTmt);
   return { matches: allMatches };
 }
 
@@ -562,16 +565,16 @@ function renderScoreboard(data) {
   function renderSBRow(m) {
     const isLive = m.matchStatus === 'P';
     const isDone = m.matchStatus === 'F' || m.matchStatus === 'C' || m.matchStatus === 'W';
-    const w = m.winner;
+    const w = getWinner(m);
     const hasFrench = isFrenchTeam(m.team1) || isFrenchTeam(m.team2);
     const disc = DISC_LABELS[m.drawCode] || '?';
     const rnd  = ROUND_NAMES[m.roundName] || m.roundName;
     const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (m.matchTime ? m.matchTime.slice(11,16) : '—');
     const statusClass = isLive ? 'sst-live' : isDone ? 'sst-ft' : 'sst-next';
-    const tmt = TOURNAMENTS[activeTmt];
-  const matchDate = match.matchTime ? match.matchTime.slice(0,10) : '';
-  const bwfUrl = (tmt.tmtUrl || 'https://bwfworldtour.bwfbadminton.com') +
-    (matchDate ? '/' + matchDate : '');
+    const _tmt = TOURNAMENTS[activeTmt];
+    const _matchDate = m.matchTime ? m.matchTime.slice(0,10) : '';
+    const bwfUrl = (_tmt.tmtUrl || 'https://bwfworldtour.bwfbadminton.com') +
+      (_matchDate ? '/' + _matchDate : '');
 
     function teamRow(team, num) {
       const isW = w === num;
@@ -679,6 +682,24 @@ function renderScoreboard(data) {
   document.getElementById('scores-content').innerHTML = html;
 }
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// Get the winning team number (1 or 2) for a finished match.
+// BWF sometimes stores winner=0 even when done, so fall back to counting sets.
+function getWinner(m) {
+  if (m.winner && m.winner !== 0) return m.winner;
+  if (!m.score || !m.score.length) return 0;
+  const done = m.matchStatus === 'F' || m.matchStatus === 'C' || m.matchStatus === 'W';
+  if (!done) return 0;
+  let t1 = 0, t2 = 0;
+  m.score.forEach(s => {
+    if (s.home > s.away) t1++;
+    else if (s.away > s.home) t2++;
+  });
+  if (t1 > t2) return 1;
+  if (t2 > t1) return 2;
+  return 0;
+}
+
 // ─── FRENCH PLAYERS PANEL ────────────────────────────────────────────────────
 function renderFrenchPanel(data) {
   const allMatches = data.matches || {};
@@ -724,8 +745,10 @@ function renderFrenchPanel(data) {
     const lastMatch = fp.matches[fp.matches.length - 1];
     const isLive = fp.matches.some(m => m.match.matchStatus === 'P');
     const eliminated = fp.matches.some(m => {
-      const w = m.match.winner;
-      return (m.match.matchStatus === 'F' || m.match.matchStatus === 'C') && w !== 0 && w !== m.teamNum;
+      const done = m.match.matchStatus === 'F' || m.match.matchStatus === 'C' || m.match.matchStatus === 'W';
+      if (!done) return false;
+      const w = getWinner(m.match);
+      return w !== 0 && w !== m.teamNum;
     });
     fp.isLive = isLive;
     fp.isOut = eliminated && !isLive;
@@ -754,8 +777,9 @@ function renderFrenchPanel(data) {
     const matchRows = fp.matches.map(({ match, teamNum }) => {
       const isLive = match.matchStatus === 'P';
       const isDone = match.matchStatus === 'F' || match.matchStatus === 'C';
-      const isWinner = match.winner === teamNum;
-      const isLoser = isDone && match.winner !== 0 && match.winner !== teamNum;
+      const _w = getWinner(match);
+      const isWinner = _w === teamNum;
+      const isLoser = isDone && _w !== 0 && _w !== teamNum;
 
       const myTeam = teamNum === 1 ? match.team1 : match.team2;
       const oppTeam = teamNum === 1 ? match.team2 : match.team1;
@@ -944,7 +968,7 @@ function renderCard(match, isFinal) {
 
   const isLive = match.matchStatus==='P';
   const isDone = match.matchStatus==='F'||match.matchStatus==='C'||match.matchStatus==='W';
-  const w = match.winner;
+  const w = getWinner(match);
   const hasFrench = isFrenchTeam(match.team1)||isFrenchTeam(match.team2);
   const _t = TOURNAMENTS[activeTmt];
   const _md = match.matchTime ? match.matchTime.slice(0,10) : '';
