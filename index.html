@@ -231,7 +231,6 @@ const TOURNAMENTS = {
     name:'All England Open 2026', level:'Super 1000', location:'Birmingham, England', badge:'s1000',
     tmtId:5515, tmtCode:'1A1AB550-BF1E-4CE9-A774-82414E3D4405',
     dates:['2026-03-03','2026-03-04','2026-03-05','2026-03-06','2026-03-07','2026-03-08'],
-    hasKVCache:true,
     tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5515/yonex-all-england-open-badminton-championships-2026/results'
   },
   'indonesia-open-2026': {
@@ -400,6 +399,22 @@ let activeDraw     = '1';
 let activeMainTab  = 'draw';
 let cachedData     = null;
 let autoTimer      = null;
+let pageVisible    = !document.hidden;
+
+document.addEventListener('visibilitychange', () => {
+  pageVisible = !document.hidden;
+  if (pageVisible) {
+    // Tab just became visible — refetch immediately then restart polling
+    cachedData = null;
+    clearInterval(autoTimer);
+    if      (activeMainTab === 'draw')   fetchAndRenderDraw();
+    else if (activeMainTab === 'scores') fetchAndRenderScores();
+    else                                 fetchAndRenderFrench();
+  } else {
+    // Tab hidden — stop polling, no point fetching for nobody
+    clearInterval(autoTimer);
+  }
+});
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 // Pick the most relevant tournament: in-progress > most recently ended > next upcoming
@@ -515,6 +530,7 @@ function switchMainTab(tab) {
   if (tab === 'french') fetchAndRenderFrench();
   else if (tab === 'scores') fetchAndRenderScores();
   else if (tab === 'draw') fetchAndRenderDraw();
+  // scheduleRefresh() is called inside each of the above after data loads
 }
 
 function buildDiscTabs() {
@@ -544,21 +560,13 @@ function refreshCurrent() {
 }
 
 // ─── FETCH ───────────────────────────────────────────────────────────────────
-// For All England: worker has KV cache at /data (pre-fetched by /refresh)
-// For all others: worker /fetch?tmtCode=X&date=Y&drawCode=Z proxies BWF API (CORS bypass)
-// Returns normalised: { matches: { "1": { code: matchObj }, ... } }
+// Fetches live data for any tournament via worker /fetch?tmtCode=X&date=Y (one request per day).
+// Returns normalised: { matches: { "1": { key: matchObj }, ... } }
 
 async function fetchData() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (tmt.tmtCode === 'UNKNOWN' && !tmt.hasKVCache)
+  if (tmt.tmtCode === 'UNKNOWN')
     throw new Error('This tournament isn\'t available yet — tmtCode not configured.');
-
-  // All England uses the pre-cached KV store
-  if (tmt.hasKVCache) {
-    const r = await fetch(`${PROXY_URL}/data`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  }
 
   // Fetch once per day (no drawCode filter) — BWF returns all draws for that day
   // Much more reliable than per-draw fetching which can silently return nothing
@@ -596,7 +604,7 @@ async function fetchData() {
 
 async function fetchAndRenderDraw() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.tmtId && !tmt.hasKVCache) {
+  if (!tmt.tmtId) {
     document.getElementById('bracket-content').innerHTML = `<div class="center">
       <div class="ctext" style="color:var(--red)">Tournament Not Yet Configured</div>
       <div class="ctext">This tournament doesn't have a numeric ID set up yet.</div>
@@ -618,21 +626,37 @@ async function fetchAndRenderDraw() {
   }
 
   renderBracket(cachedData, activeDraw);
+  scheduleRefresh();
+}
 
-  // Auto-refresh if any match is live
+function scheduleRefresh() {
   clearInterval(autoTimer);
-  const drawMatches = Object.values((cachedData.matches || {})[activeDraw] || {});
-  if (drawMatches.some(m => m.matchStatus === 'P')) {
-    autoTimer = setInterval(async () => {
-      cachedData = null;
-      await fetchAndRenderDraw();
-    }, 30000);
-  }
+
+  if (!pageVisible) return; // tab hidden — don't poll
+
+  const today = new Date().toISOString().slice(0,10);
+  const tmt   = TOURNAMENTS[activeTmt];
+  if (!tmt) return;
+
+  const isTmtDay = today >= tmt.dates[0] && today <= tmt.dates[tmt.dates.length-1];
+  if (!isTmtDay) return; // tournament not running today — no polling needed
+
+  // Check all draws for any live match
+  const allMatches = Object.values(cachedData?.matches || {}).flatMap(d => Object.values(d));
+  const anyLive    = allMatches.some(m => m.matchStatus === 'P');
+
+  // Fast poll (5s) when matches are live, slow poll (30s) on tournament days
+  const interval = anyLive ? 5000 : 30000;
+
+  autoTimer = setInterval(async () => {
+    cachedData = null;
+    await fetchAndRenderDraw();
+  }, interval);
 }
 
 async function fetchAndRenderFrench() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.tmtId && !tmt.hasKVCache) {
+  if (!tmt.tmtId) {
     document.getElementById('fp-sub').textContent = 'Tournament not yet available.';
     document.getElementById('fp-grid').innerHTML = `<div class="fp-empty">No data yet for this tournament.</div>`;
     return;
@@ -651,12 +675,13 @@ async function fetchAndRenderFrench() {
   }
 
   renderFrenchPanel(cachedData);
+  scheduleRefresh();
 }
 
 
 async function fetchAndRenderScores() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.tmtId && !tmt.hasKVCache) {
+  if (!tmt.tmtId) {
     document.getElementById('scores-content').innerHTML = `<div class="center"><div class="ctext">No data for this tournament yet.</div></div>`;
     return;
   }
@@ -668,6 +693,7 @@ async function fetchAndRenderScores() {
     }
   }
   renderScoreboard(cachedData);
+  scheduleRefresh();
 }
 
 function renderScoreboard(data) {
@@ -1000,7 +1026,7 @@ function renderBracket(data, drawCode) {
 
   if (!matchList.length) {
     const tmt = TOURNAMENTS[activeTmt];
-    const isUnknown = !tmt.hasKVCache && tmt.tmtId;
+    const isUnknown = tmt.tmtCode === 'UNKNOWN';
     document.getElementById('bracket-content').innerHTML = `<div class="center">
       <div class="ctext" style="color:var(--red)">${isUnknown ? 'Could Not Load Draw' : 'No Draw Data'}</div>
       <div class="ctext">${isUnknown
@@ -1048,7 +1074,7 @@ function renderBracket(data, drawCode) {
 
     html += `<div class="round-col" data-ci="${ci}" style="width:${colW}px">`;
     html += `<div class="round-hdr${hasLive?' r-live':''}">${rLabel}</div>`;
-    html += `<div class="round-body" style="padding-top:${topPad}px">`;
+    html += `<div class="round-body" data-ci="${ci}" style="padding-top:${topPad}px">`;
 
     matches.forEach((match, row) => {
       if (row > 0) html += `<div style="height:${gap}px;flex-shrink:0"></div>`;
@@ -1069,23 +1095,52 @@ function renderBracket(data, drawCode) {
   html += `</div></div>`;
   document.getElementById('bracket-content').innerHTML = html;
 
-  // After DOM is painted, measure real card positions and draw exact connector lines
-  requestAnimationFrame(() => {
+  // After DOM is fully painted: measure real card positions,
+  // reposition each column's round-body to align correctly,
+  // then draw exact connector lines.
+  // Double-RAF ensures full layout pass has completed before measuring.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     const bracket = document.getElementById('bracket-inner');
     if (!bracket) return;
     const bracketTop = bracket.getBoundingClientRect().top;
 
-    // Build a map of card midpoint Y positions per column
-    const cardMids = {};
-    bracket.querySelectorAll('.card-row').forEach(row => {
-      const ci  = parseInt(row.dataset.ci);
-      const idx = parseInt(row.dataset.row);
-      if (!cardMids[ci]) cardMids[ci] = [];
-      const rect = row.getBoundingClientRect();
-      cardMids[ci][idx] = rect.top + rect.height / 2 - bracketTop;
-    });
+    // Measure current card row midpoints per column
+    function measureMids() {
+      const mids = {};
+      bracket.querySelectorAll('.card-row').forEach(row => {
+        const ci  = parseInt(row.dataset.ci);
+        const idx = parseInt(row.dataset.row);
+        if (!mids[ci]) mids[ci] = [];
+        const rect = row.getBoundingClientRect();
+        mids[ci][idx] = rect.top + rect.height / 2 - bracketTop;
+      });
+      return mids;
+    }
 
-    // Draw connector SVGs between each adjacent column pair
+    // Pass 1: fix topPad for each column so card[0] sits at the correct y
+    // For ci>0, card[0] should be at the midpoint of from-col cards [0] and [1]
+    for (let ci = 1; ci < cols.length; ci++) {
+      const body = bracket.querySelector(`.round-body[data-ci="${ci}"]`) ||
+                   bracket.querySelectorAll('.round-body')[ci];
+      if (!body) continue;
+
+      const mids = measureMids();
+      const fromMids = mids[ci - 1] || [];
+      if (fromMids.length < 2) continue;
+
+      const pairSize   = fromMids.length / (mids[ci] || [1]).length;
+      const targetY    = (fromMids[0] + fromMids[Math.round(pairSize) - 1]) / 2;
+      const currentY   = (mids[ci] || [])[0];
+      if (currentY === undefined) continue;
+
+      const currentPad = parseFloat(body.style.paddingTop) || 0;
+      const newPad     = Math.max(0, currentPad + (targetY - currentY));
+      body.style.paddingTop = newPad + 'px';
+    }
+
+    // Pass 2: re-measure after padding adjustments, draw connectors
+    const cardMids = measureMids();
+
     cols.forEach((col, ci) => {
       if (ci === cols.length - 1) return;
       const svg = document.getElementById(`join-${ci}`);
@@ -1093,9 +1148,9 @@ function renderBracket(data, drawCode) {
 
       const fromMids = cardMids[ci]     || [];
       const toMids   = cardMids[ci + 1] || [];
+      if (!fromMids.length || !toMids.length) return;
       const pairSize = fromMids.length / toMids.length;
 
-      // SVG coordinate space: y=0 is bracketTop (top of #bracket-inner)
       let paths = '';
       toMids.forEach((yt, ti) => {
         const f1 = Math.round(ti * pairSize);
@@ -1103,19 +1158,17 @@ function renderBracket(data, drawCode) {
         const y1 = fromMids[f1];
         const y2 = fromMids[f2];
         if (y1 === undefined || y2 === undefined) return;
-        // Vertical bar connecting the two from-cards
-        paths += `<line x1="0" y1="${y1.toFixed(1)}" x2="0" y2="${y2.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
-        // Horizontal line from midpoint of bar to the to-card
         const yMid = (y1 + y2) / 2;
+        paths += `<line x1="0" y1="${y1.toFixed(1)}" x2="0" y2="${y2.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
         paths += `<line x1="0" y1="${yMid.toFixed(1)}" x2="${JOIN_W}" y2="${yMid.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
       });
 
-      const svgH = Math.max(...fromMids, ...toMids) + 20;
-      svg.setAttribute('height', svgH);
+      const allMids = [...fromMids, ...toMids].filter(Number.isFinite);
+      svg.setAttribute('height', Math.max(...allMids) + 40 - bracketTop);
       svg.setAttribute('style', 'flex-shrink:0;overflow:visible');
       svg.innerHTML = paths;
     });
-  });
+  }));
 }
 
 function renderCard(match, isFinal) {
