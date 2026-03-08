@@ -391,7 +391,7 @@ const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
 const ROUND_NAMES      = { R64:'R64', R32:'R32', R16:'R16', QF:'QF', SF:'SF', F:'Final', Final:'Final' };
 const ROUND_NAMES_LONG = { R64:'Round of 64', R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Final', SF:'Semi-Final', F:'Final', Final:'Final' };
 
-const CARD_H   = 70;
+const CARD_H   = 78;
 const CARD_W   = 230;
 const GAP_BASE = 8;
 
@@ -613,11 +613,15 @@ async function fetchAndRenderDraw() {
   }
 
   if (!cachedData) {
-    document.getElementById('bracket-content').innerHTML = `<div class="center"><div class="spinner"></div><div class="ctext">Loading draw...</div></div>`;
+    // First load — show spinner only if content area is empty
+    const bc = document.getElementById('bracket-content');
+    if (!bc.querySelector('.bracket-scroll')) {
+      bc.innerHTML = `<div class="center"><div class="spinner"></div><div class="ctext">Loading draw...</div></div>`;
+    }
     try {
       cachedData = await fetchData();
     } catch(e) {
-      document.getElementById('bracket-content').innerHTML = `<div class="center">
+      bc.innerHTML = `<div class="center">
         <div class="ctext" style="color:var(--red)">Could not load draw data</div>
         <div class="ctext">${e.message}</div>
       </div>`;
@@ -625,7 +629,20 @@ async function fetchAndRenderDraw() {
     }
   }
 
+  // Preserve scroll position across re-renders
+  const scroll = document.querySelector('.bracket-scroll');
+  const scrollLeft = scroll ? scroll.scrollLeft : 0;
+  const scrollTop  = window.scrollY;
+
   renderBracket(cachedData, activeDraw);
+
+  // Restore scroll after render (bracket-scroll is newly created, window scroll preserved)
+  requestAnimationFrame(() => {
+    const newScroll = document.querySelector('.bracket-scroll');
+    if (newScroll) newScroll.scrollLeft = scrollLeft;
+    window.scrollTo({ top: scrollTop, behavior: 'instant' });
+  });
+
   scheduleRefresh();
 }
 
