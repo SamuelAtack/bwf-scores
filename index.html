@@ -437,9 +437,11 @@ async function fetchData() {
         const list = Array.isArray(items) ? items : Object.values(items);
         list.forEach(m => {
           const dc = String(m.drawCode ?? '');
-          if (!dc || !allMatches[dc]) return; // skip if drawCode not in 1-5
-          const key = String(m.code || m.id || '');
-          if (key) allMatches[dc][key] = m;
+          if (!dc || !allMatches[dc]) return;
+          // Use roundName+code as key — BWF reuses small code numbers across rounds
+          // so plain code collides (e.g. MS Final code:"1" overwrites MS R32 code:"1")
+          const key = `${m.roundName || 'X'}_${m.code || m.id || ''}`;
+          if (key !== 'X_') allMatches[dc][key] = m;
         });
       })
       .catch(e => console.warn('Fetch failed for', date, e));
@@ -853,7 +855,6 @@ function getTopPad(roundName) {
 }
 
 function renderBracket(data, drawCode) {
-  // Real /data structure: { matches: { "1": { "matchCode": matchObj, ... }, ... } }
   const drawMatches = (data.matches || {})[drawCode] || {};
   const matchList = Object.values(drawMatches);
 
@@ -870,62 +871,62 @@ function renderBracket(data, drawCode) {
     return;
   }
 
-  // Group matches by round, sort within each round by matchTime then by code
+  // Group by round, sort slots within each round by numeric code (= bracket position)
+  const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
   const roundCols = {};
   matchList.forEach(match => {
     const rn = match.roundName || 'F';
-    if (!roundCols[rn]) roundCols[rn] = { roundName: rn, slots: {} };
-    const slotCount = Object.keys(roundCols[rn].slots).length;
-    roundCols[rn].slots[slotCount] = match;
+    if (!roundCols[rn]) roundCols[rn] = [];
+    roundCols[rn].push(match);
+  });
+  Object.keys(roundCols).forEach(rn => {
+    roundCols[rn].sort((a, b) => parseInt(a.code) - parseInt(b.code));
   });
 
-  // Sort matches within each round by numeric match code (bracket position order).
-  // BWF assigns codes sequentially in bracket order, so code order = bracket slot order.
-  Object.values(roundCols).forEach(rc => {
-    const sorted = Object.values(rc.slots).sort((a, b) => parseInt(a.code) - parseInt(b.code));
-    rc.slots = {};
-    sorted.forEach((m, i) => { rc.slots[i] = m; });
-  });
-
-  // Order columns: R64 → R32 → R16 → QF → SF → F
-  const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
+  // Sort columns by canonical round order
   const cols = Object.keys(roundCols).sort((a,b) => ROUND_ORDER.indexOf(a) - ROUND_ORDER.indexOf(b));
+
+  // Compute gap/topPad using position WITHIN the actual cols present (0-indexed from first round)
+  // This fixes tournaments without R64 — QF becomes col index 2, not 3
+  function colGap(colIndex) {
+    if (colIndex === 0) return GAP_BASE;
+    return Math.pow(2, colIndex) * (CARD_H + GAP_BASE) - CARD_H;
+  }
+  function colTopPad(colIndex) {
+    if (colIndex === 0) return 0;
+    return (colGap(colIndex) - colGap(colIndex - 1)) / 2;
+  }
 
   const CONN_W = 24;
   const JOIN_W = 18;
   let html = `<div class="bracket-scroll"><div class="bracket" style="padding-top:4px">`;
 
   cols.forEach((col, ci) => {
-    const rc = roundCols[col];
-    const slots = rc.slots;
-    const maxRow = Math.max(...Object.keys(slots).map(Number));
+    const matches = roundCols[col];
     const isLast = ci === cols.length - 1;
-    const gap = getGap(col);
-    const topPad = getTopPad(col);
-    const hasLive = Object.values(slots).some(m => m?.matchStatus==='P');
-    const rLabel = ROUND_NAMES_LONG[rc.roundName] || rc.roundName;
+    const gap = colGap(ci);
+    const topPad = colTopPad(ci);
+    const hasLive = matches.some(m => m?.matchStatus === 'P');
+    const rLabel = ROUND_NAMES_LONG[col] || col;
     const colW = CARD_W + (isLast ? 0 : CONN_W);
 
     html += `<div class="round-col" style="width:${colW}px">`;
     html += `<div class="round-hdr${hasLive?' r-live':''}">${rLabel}</div>`;
     html += `<div class="round-body" style="padding-top:${topPad}px">`;
 
-    for (let row = 0; row <= maxRow; row++) {
+    matches.forEach((match, row) => {
       if (row > 0) html += `<div style="height:${gap}px;flex-shrink:0"></div>`;
-      const match = slots[row];
       html += `<div style="display:flex;align-items:center">`;
       html += renderCard(match, isLast);
       if (!isLast) html += `<div style="width:${CONN_W}px;height:1px;background:var(--border);flex-shrink:0"></div>`;
       html += `</div>`;
-    }
+    });
 
     html += `</div></div>`;
 
     if (!isLast) {
-      const nextCol = cols[ci+1];
-      const nextSlots = roundCols[nextCol].slots;
-      const nextMaxRow = Math.max(...Object.keys(nextSlots).map(Number));
-      html += renderSVGJoins(maxRow+1, nextMaxRow+1, gap, getGap(nextCol), topPad, getTopPad(nextCol), JOIN_W);
+      const nextMatches = roundCols[cols[ci+1]];
+      html += renderSVGJoins(matches.length, nextMatches.length, gap, colGap(ci+1), topPad, colTopPad(ci+1), JOIN_W);
     }
   });
 
