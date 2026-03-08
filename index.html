@@ -375,6 +375,7 @@ function switchMainTab(tab) {
   document.getElementById('panel-french').style.display = tab === 'french' ? 'block' : 'none';
   if (tab === 'french') fetchAndRenderFrench();
   else if (tab === 'scores') fetchAndRenderScores();
+  else if (tab === 'draw') fetchAndRenderDraw();
 }
 
 function buildDiscTabs() {
@@ -419,29 +420,22 @@ async function fetchData() {
     return await r.json();
   }
 
-  // For all other tournaments: fetch each day × each draw via the worker proxy
-  // Worker /fetch?tmtCode=X&date=Y&drawCode=Z calls BWF day-matches and returns JSON
-  if (tmt.tmtCode === 'UNKNOWN') {
-    throw new Error('Tournament tmtCode not yet configured. Check DevTools on the BWF results page for the tournamentCode UUID.');
-  }
-
+  // For all other tournaments: worker resolves UUID from numeric tmtId automatically
   const allMatches = { '1':{}, '2':{}, '3':{}, '4':{}, '5':{} };
   const draws = ['1','2','3','4','5'];
 
-  // Fetch all day+draw combos in parallel
   const tasks = [];
   for (const date of tmt.dates) {
     for (const draw of draws) {
       tasks.push(
-        fetch(`${PROXY_URL}/fetch?tmtCode=${tmt.tmtCode}&date=${date}&drawCode=${draw}`)
+        fetch(`${PROXY_URL}/fetch?tmtId=${tmt.tmtId}&date=${date}&drawCode=${draw}`)
           .then(r => r.ok ? r.json() : null)
           .then(json => {
-            if (!json) return;
-            // BWF day-matches returns { results: [...] } or similar
+            if (!json || json.error) return;
             const items = json.results || json.matches || json || [];
             const list = Array.isArray(items) ? items : Object.values(items);
             list.forEach(m => {
-              const dc = m.drawCode || draw;
+              const dc = String(m.drawCode || draw);
               const key = m.code || m.id;
               if (key) allMatches[dc][key] = m;
             });
@@ -458,8 +452,8 @@ async function fetchAndRenderDraw() {
   const tmt = TOURNAMENTS[activeTmt];
   if (!tmt.tmtId && !tmt.hasKVCache) {
     document.getElementById('bracket-content').innerHTML = `<div class="center">
-      <div class="ctext" style="color:var(--red)">Tournament Not Yet Available</div>
-      <div class="ctext">Live data for this tournament isn't set up yet. Select All England 2026 to see the live draw.</div>
+      <div class="ctext" style="color:var(--red)">Tournament Not Yet Configured</div>
+      <div class="ctext">This tournament doesn't have a numeric ID set up yet.</div>
     </div>`;
     return;
   }
@@ -573,7 +567,10 @@ function renderScoreboard(data) {
     const rnd  = ROUND_NAMES[m.roundName] || m.roundName;
     const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (m.matchTime ? m.matchTime.slice(11,16) : '—');
     const statusClass = isLive ? 'sst-live' : isDone ? 'sst-ft' : 'sst-next';
-    const bwfUrl = TOURNAMENTS[activeTmt].tmtUrl || 'https://bwfworldtour.bwfbadminton.com';
+    const tmt = TOURNAMENTS[activeTmt];
+  const matchDate = match.matchTime ? match.matchTime.slice(0,10) : '';
+  const bwfUrl = (tmt.tmtUrl || 'https://bwfworldtour.bwfbadminton.com') +
+    (matchDate ? '/' + matchDate : '');
 
     function teamRow(team, num) {
       const isW = w === num;
@@ -940,7 +937,9 @@ function renderCard(match, isFinal) {
   const isDone = match.matchStatus==='F'||match.matchStatus==='C'||match.matchStatus==='W';
   const w = match.winner;
   const hasFrench = isFrenchTeam(match.team1)||isFrenchTeam(match.team2);
-  const bwfUrl = TOURNAMENTS[activeTmt].tmtUrl || 'https://bwfworldtour.bwfbadminton.com';
+  const _t = TOURNAMENTS[activeTmt];
+  const _md = m.matchTime ? m.matchTime.slice(0,10) : '';
+  const bwfUrl = (_t.tmtUrl || 'https://bwfworldtour.bwfbadminton.com') + (_md ? '/' + _md : '');
   const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (match.matchTime ? match.matchTime.slice(11,16) : '—');
   const statusClass = isLive ? 'st-live' : isDone ? 'st-ft' : 'st-next';
 
