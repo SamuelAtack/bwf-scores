@@ -217,11 +217,8 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 // dates (array of YYYY-MM-DD for each day), tmtUrl (results page link)
 // tmtCode can be found by opening DevTools on the BWF results page and looking
 // at network requests for "day-matches?tournamentCode=..."
-// TOURNAMENT REGISTRY — Super 300+ events for 2026.
-// To add/enable a tournament:
-//   1. Set tmtId from the BWF results page URL (e.g. /tournament/5227/...)
-//   2. Set tmtCode UUID from DevTools: Network tab → find day-matches request → copy tournamentCode param
-//   tmtCode 'UNKNOWN' = data not yet available (tournament hasn't started, or UUID not grabbed yet)
+// TOURNAMENT REGISTRY — full 2026 BWF World Tour (Super 300+)
+// tmtCode 'UNKNOWN' = UUID not yet grabbed; grab it from BWF DevTools once tournament starts
 const TOURNAMENTS = {
   // ── Super 1000 ────────────────────────────────────────────────────────────
   'malaysia-2026': {
@@ -262,16 +259,16 @@ const TOURNAMENTS = {
     dates:['2026-05-26','2026-05-27','2026-05-28','2026-05-29','2026-05-30','2026-05-31'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
-  'china-masters-2026': {
-    name:'China Masters 2026', level:'Super 750', location:'Shenzhen, China', badge:'s750',
-    tmtId:0, tmtCode:'UNKNOWN',
-    dates:['2026-09-01','2026-09-02','2026-09-03','2026-09-04','2026-09-05','2026-09-06'],
-    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
-  },
   'japan-open-2026': {
     name:'Japan Open 2026', level:'Super 750', location:'Tokyo, Japan', badge:'s750',
     tmtId:0, tmtCode:'UNKNOWN',
     dates:['2026-07-14','2026-07-15','2026-07-16','2026-07-17','2026-07-18','2026-07-19'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'china-masters-2026': {
+    name:'China Masters 2026', level:'Super 750', location:'Shenzhen, China', badge:'s750',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-09-01','2026-09-02','2026-09-03','2026-09-04','2026-09-05','2026-09-06'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
   'denmark-open-2026': {
@@ -291,12 +288,6 @@ const TOURNAMENTS = {
     name:'Indonesia Masters 2026', level:'Super 500', location:'Jakarta, Indonesia', badge:'s500',
     tmtId:0, tmtCode:'UNKNOWN',
     dates:['2026-01-20','2026-01-21','2026-01-22','2026-01-23','2026-01-24','2026-01-25'],
-    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
-  },
-  'swiss-open-2026': {
-    name:'Swiss Open 2026', level:'Super 500', location:'Basel, Switzerland', badge:'s500',
-    tmtId:0, tmtCode:'UNKNOWN',
-    dates:['2026-03-10','2026-03-11','2026-03-12','2026-03-13','2026-03-14','2026-03-15'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
   'thailand-open-2026': {
@@ -333,6 +324,55 @@ const TOURNAMENTS = {
     name:'Hong Kong Open 2026', level:'Super 500', location:'Hong Kong, China', badge:'s500',
     tmtId:0, tmtCode:'UNKNOWN',
     dates:['2026-11-17','2026-11-18','2026-11-19','2026-11-20','2026-11-21','2026-11-22'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  // ── Super 300 ─────────────────────────────────────────────────────────────
+  'thailand-masters-2026': {
+    name:'Thailand Masters 2026', level:'Super 300', location:'Bangkok, Thailand', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-01-27','2026-01-28','2026-01-29','2026-01-30','2026-01-31','2026-02-01'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'german-open-2026': {
+    name:'German Open 2026', level:'Super 300', location:'Mülheim, Germany', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-02-24','2026-02-25','2026-02-26','2026-02-27','2026-02-28','2026-03-01'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'swiss-open-2026': {
+    name:'Swiss Open 2026', level:'Super 300', location:'Basel, Switzerland', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-03-10','2026-03-11','2026-03-12','2026-03-13','2026-03-14','2026-03-15'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'orleans-masters-2026': {
+    name:'Orléans Masters 2026', level:'Super 300', location:'Orléans, France', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-03-17','2026-03-18','2026-03-19','2026-03-20','2026-03-21','2026-03-22'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'canada-open-2026': {
+    name:'Canada Open 2026', level:'Super 300', location:'Markham, Canada', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-06-30','2026-07-01','2026-07-02','2026-07-03','2026-07-04','2026-07-05'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'taipei-open-2026': {
+    name:'Taipei Open 2026', level:'Super 300', location:'Taipei, Taiwan', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-07-28','2026-07-29','2026-07-30','2026-07-31','2026-08-01','2026-08-02'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'korea-masters-2026': {
+    name:'Korea Masters 2026', level:'Super 300', location:'Gwangju, South Korea', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-11-03','2026-11-04','2026-11-05','2026-11-06','2026-11-07','2026-11-08'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'syed-modi-2026': {
+    name:'Syed Modi India International 2026', level:'Super 300', location:'Lucknow, India', badge:'s300',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-11-24','2026-11-25','2026-11-26','2026-11-27','2026-11-28','2026-11-29'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
 };
@@ -971,7 +1011,7 @@ function renderBracket(data, drawCode) {
     return;
   }
 
-  // Group by round, sort slots within each round by numeric code (= bracket position)
+  // Group by round, sort by numeric code (= bracket position)
   const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
   const roundCols = {};
   matchList.forEach(match => {
@@ -982,41 +1022,37 @@ function renderBracket(data, drawCode) {
   Object.keys(roundCols).forEach(rn => {
     roundCols[rn].sort((a, b) => parseInt(a.code) - parseInt(b.code));
   });
-
-  // Sort columns by canonical round order
   const cols = Object.keys(roundCols).sort((a,b) => ROUND_ORDER.indexOf(a) - ROUND_ORDER.indexOf(b));
 
-  // Compute gap/topPad using position WITHIN the actual cols present (0-indexed from first round)
-  // This fixes tournaments without R64 — QF becomes col index 2, not 3
-  function colGap(colIndex) {
-    if (colIndex === 0) return GAP_BASE;
-    return Math.pow(2, colIndex) * (CARD_H + GAP_BASE) - CARD_H;
+  function colGap(ci) {
+    if (ci === 0) return GAP_BASE;
+    return Math.pow(2, ci) * (CARD_H + GAP_BASE) - CARD_H;
   }
-  function colTopPad(colIndex) {
-    if (colIndex === 0) return 0;
-    return (colGap(colIndex) - colGap(colIndex - 1)) / 2;
+  function colTopPad(ci) {
+    if (ci === 0) return 0;
+    return (colGap(ci) - colGap(ci - 1)) / 2;
   }
 
   const CONN_W = 24;
   const JOIN_W = 18;
-  let html = `<div class="bracket-scroll"><div class="bracket" style="padding-top:4px">`;
+  let html = `<div class="bracket-scroll"><div class="bracket" id="bracket-inner" style="padding-top:4px">`;
 
   cols.forEach((col, ci) => {
     const matches = roundCols[col];
-    const isLast = ci === cols.length - 1;
-    const gap = colGap(ci);
-    const topPad = colTopPad(ci);
+    const isLast  = ci === cols.length - 1;
+    const gap     = colGap(ci);
+    const topPad  = colTopPad(ci);
     const hasLive = matches.some(m => m?.matchStatus === 'P');
-    const rLabel = ROUND_NAMES_LONG[col] || col;
-    const colW = CARD_W + (isLast ? 0 : CONN_W);
+    const rLabel  = ROUND_NAMES_LONG[col] || col;
+    const colW    = CARD_W + (isLast ? 0 : CONN_W);
 
-    html += `<div class="round-col" style="width:${colW}px">`;
+    html += `<div class="round-col" data-ci="${ci}" style="width:${colW}px">`;
     html += `<div class="round-hdr${hasLive?' r-live':''}">${rLabel}</div>`;
     html += `<div class="round-body" style="padding-top:${topPad}px">`;
 
     matches.forEach((match, row) => {
       if (row > 0) html += `<div style="height:${gap}px;flex-shrink:0"></div>`;
-      html += `<div style="display:flex;align-items:center">`;
+      html += `<div class="card-row" data-ci="${ci}" data-row="${row}" style="display:flex;align-items:center">`;
       html += renderCard(match, isLast);
       if (!isLast) html += `<div style="width:${CONN_W}px;height:1px;background:var(--border);flex-shrink:0"></div>`;
       html += `</div>`;
@@ -1024,35 +1060,62 @@ function renderBracket(data, drawCode) {
 
     html += `</div></div>`;
 
+    // Placeholder SVG — will be replaced with exact measurements after DOM render
     if (!isLast) {
-      const nextMatches = roundCols[cols[ci+1]];
-      html += renderSVGJoins(matches.length, nextMatches.length, gap, colGap(ci+1), topPad, colTopPad(ci+1), JOIN_W);
+      html += `<svg class="vjoins" id="join-${ci}" width="${JOIN_W}" height="1000" style="flex-shrink:0;overflow:visible"></svg>`;
     }
   });
 
   html += `</div></div>`;
   document.getElementById('bracket-content').innerHTML = html;
-}
 
-function renderSVGJoins(fromCount, toCount, fromGap, toGap, fromTopPad, toTopPad, width) {
-  // HEADER_H must match the actual rendered .round-hdr height
-  const HEADER_H = 30;
-  const totalH = fromCount * CARD_H + (fromCount-1)*fromGap + fromTopPad + HEADER_H + 20;
-  const pairSize = fromCount / toCount;
-  let paths = '';
+  // After DOM is painted, measure real card positions and draw exact connector lines
+  requestAnimationFrame(() => {
+    const bracket = document.getElementById('bracket-inner');
+    if (!bracket) return;
+    const bracketTop = bracket.getBoundingClientRect().top;
 
-  for (let ti = 0; ti < toCount; ti++) {
-    const f1 = ti * pairSize;
-    const f2 = ti * pairSize + pairSize - 1;
-    const y1   = HEADER_H + fromTopPad + f1*(CARD_H+fromGap) + CARD_H/2;
-    const y2   = HEADER_H + fromTopPad + f2*(CARD_H+fromGap) + CARD_H/2;
-    const yMid = (y1+y2)/2;
-    // yt must equal yMid: the "to" card is centred between its two "from" cards by definition
-    paths += `<line x1="0" y1="${y1.toFixed(1)}" x2="0" y2="${y2.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
-    paths += `<line x1="0" y1="${yMid.toFixed(1)}" x2="${width}" y2="${yMid.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
-  }
+    // Build a map of card midpoint Y positions per column
+    const cardMids = {};
+    bracket.querySelectorAll('.card-row').forEach(row => {
+      const ci  = parseInt(row.dataset.ci);
+      const idx = parseInt(row.dataset.row);
+      if (!cardMids[ci]) cardMids[ci] = [];
+      const rect = row.getBoundingClientRect();
+      cardMids[ci][idx] = rect.top + rect.height / 2 - bracketTop;
+    });
 
-  return `<svg class="vjoins" width="${width}" height="${totalH}" style="flex-shrink:0;overflow:visible;margin-top:-${HEADER_H}px">${paths}</svg>`;
+    // Draw connector SVGs between each adjacent column pair
+    cols.forEach((col, ci) => {
+      if (ci === cols.length - 1) return;
+      const svg = document.getElementById(`join-${ci}`);
+      if (!svg) return;
+
+      const fromMids = cardMids[ci]     || [];
+      const toMids   = cardMids[ci + 1] || [];
+      const pairSize = fromMids.length / toMids.length;
+
+      // SVG coordinate space: y=0 is bracketTop (top of #bracket-inner)
+      let paths = '';
+      toMids.forEach((yt, ti) => {
+        const f1 = Math.round(ti * pairSize);
+        const f2 = Math.round(ti * pairSize + pairSize - 1);
+        const y1 = fromMids[f1];
+        const y2 = fromMids[f2];
+        if (y1 === undefined || y2 === undefined) return;
+        // Vertical bar connecting the two from-cards
+        paths += `<line x1="0" y1="${y1.toFixed(1)}" x2="0" y2="${y2.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
+        // Horizontal line from midpoint of bar to the to-card
+        const yMid = (y1 + y2) / 2;
+        paths += `<line x1="0" y1="${yMid.toFixed(1)}" x2="${JOIN_W}" y2="${yMid.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
+      });
+
+      const svgH = Math.max(...fromMids, ...toMids) + 20;
+      svg.setAttribute('height', svgH);
+      svg.setAttribute('style', 'flex-shrink:0;overflow:visible');
+      svg.innerHTML = paths;
+    });
+  });
 }
 
 function renderCard(match, isFinal) {
