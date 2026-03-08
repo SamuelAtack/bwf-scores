@@ -612,10 +612,12 @@ async function fetchAndRenderDraw() {
     return;
   }
 
+  const bc = document.getElementById('bracket-content');
+  const hasBracket = !!bc.querySelector('.bracket-scroll');
+
   if (!cachedData) {
-    // First load — show spinner only if content area is empty
-    const bc = document.getElementById('bracket-content');
-    if (!bc.querySelector('.bracket-scroll')) {
+    // First ever load — show spinner
+    if (!hasBracket) {
       bc.innerHTML = `<div class="center"><div class="spinner"></div><div class="ctext">Loading draw...</div></div>`;
     }
     try {
@@ -629,21 +631,72 @@ async function fetchAndRenderDraw() {
     }
   }
 
-  // Preserve scroll position across re-renders
-  const scroll = document.querySelector('.bracket-scroll');
-  const scrollLeft = scroll ? scroll.scrollLeft : 0;
-  const scrollTop  = window.scrollY;
-
-  renderBracket(cachedData, activeDraw);
-
-  // Restore scroll after render (bracket-scroll is newly created, window scroll preserved)
-  requestAnimationFrame(() => {
-    const newScroll = document.querySelector('.bracket-scroll');
-    if (newScroll) newScroll.scrollLeft = scrollLeft;
-    window.scrollTo({ top: scrollTop, behavior: 'instant' });
-  });
+  if (hasBracket) {
+    // Bracket already rendered — patch only the live scores, no re-render
+    patchBracket(cachedData, activeDraw);
+  } else {
+    renderBracket(cachedData, activeDraw);
+  }
 
   scheduleRefresh();
+}
+
+// Surgically update only the score/status parts of already-rendered cards.
+// Finds each card by data-code and patches status badge, scores, and winner classes.
+function patchBracket(data, drawCode) {
+  const drawMatches = (data.matches || {})[drawCode] || {};
+  Object.values(drawMatches).forEach(match => {
+    const card = document.querySelector(`.mc[data-code="${match.code}"]`);
+    if (!card) return;
+
+    const isLive = match.matchStatus === 'P';
+    const isDone = match.matchStatus === 'F' || match.matchStatus === 'C' || match.matchStatus === 'W';
+    const w      = getWinner(match);
+
+    // Update card-level live/done classes
+    card.classList.toggle('mc-live', isLive);
+
+    // Status badge
+    const stEl = card.querySelector('[data-live-status]');
+    if (stEl) {
+      const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (match.matchTime ? match.matchTime.slice(11,16) : '—');
+      stEl.textContent = statusLabel;
+      stEl.className   = `mc-st ${isLive ? 'st-live' : isDone ? 'st-ft' : 'st-next'}`;
+    }
+
+    // Team rows
+    [1, 2].forEach(teamSlot => {
+      const tr = card.querySelector(`[data-team="${teamSlot}"]`);
+      if (!tr) return;
+      const team   = teamSlot === 1 ? match.team1 : match.team2;
+      const isW    = w === teamSlot;
+      const french = isFrenchTeam(team);
+
+      // Winner/french highlight on row
+      tr.classList.toggle('tr-won',    isW && isDone);
+      tr.classList.toggle('tr-french', french);
+
+      // Name winner highlight
+      const nameEl = tr.querySelector('[data-live-name]');
+      if (nameEl) {
+        nameEl.classList.toggle('n-won',    isW);
+        nameEl.classList.toggle('n-french', !isW && french);
+      }
+
+      // Scores
+      const scoresEl = tr.querySelector('[data-live-scores]');
+      if (scoresEl) {
+        const scores = match.score || [];
+        scoresEl.innerHTML = scores.map((s, i) => {
+          const v = teamSlot === 1 ? s.home : s.away;
+          const o = teamSlot === 1 ? s.away : s.home;
+          const isLast = isLive && i === scores.length - 1;
+          const cls = 'sc' + (isLast ? ' sc-live' : v > o ? ' sc-w' : '');
+          return `<span class="${cls}">${v}</span>`;
+        }).join('');
+      }
+    });
+  });
 }
 
 function scheduleRefresh() {
@@ -1208,17 +1261,17 @@ function renderCard(match, isFinal) {
   const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (match.matchTime ? match.matchTime.slice(11,16) : '—');
   const statusClass = isLive ? 'st-live' : isDone ? 'st-ft' : 'st-next';
 
-  return `<div class="mc${isLive?' mc-live':''}${isFinal?' mc-final':''}${hasFrench?' mc-french':''}" style="height:${CARD_H}px" onclick="window.open('${bwfUrl}','_blank')">
+  return `<div class="mc${isLive?' mc-live':''}${isFinal?' mc-final':''}${hasFrench?' mc-french':''}" data-code="${match.code}" style="height:${CARD_H}px" onclick="window.open('${bwfUrl}','_blank')">
     <div class="mc-head">
       <span class="mc-rnd">${ROUND_NAMES[match.roundName]||match.roundName}</span>
-      <span class="mc-st ${statusClass}">${statusLabel}</span>
+      <span class="mc-st ${statusClass}" data-live-status>${statusLabel}</span>
     </div>
-    ${renderTeamRow(match.team1, 1, w, match, isLive, isDone)}
-    ${renderTeamRow(match.team2, 2, w, match, isLive, isDone)}
+    ${renderTeamRow(match.team1, 1, w, match, isLive, isDone, 1)}
+    ${renderTeamRow(match.team2, 2, w, match, isLive, isDone, 2)}
   </div>`;
 }
 
-function renderTeamRow(team, num, winner, match, isLive, isDone) {
+function renderTeamRow(team, num, winner, match, isLive, isDone, teamSlot) {
   const isW = winner===num;
   const seed = num===1 ? match.team1seed : match.team2seed;
   const flag = team?.countryFlagUrl;
@@ -1242,11 +1295,11 @@ function renderTeamRow(team, num, winner, match, isLive, isDone) {
     return `<span class="${cls}">${v}</span>`;
   }).join('');
 
-  return `<div class="tr${isW&&isDone?' tr-won':''}${french?' tr-french':''}">
+  return `<div class="tr${isW&&isDone?' tr-won':''}${french?' tr-french':''}" data-team="${teamSlot||num}">
     ${flag?`<img class="tr-flag" src="${flag}" alt="">`:`<div class="tr-flag"></div>`}
     <span class="tr-seed">${seed?`[${seed}]`:''}</span>
-    <span class="${nc}">${name}</span>
-    <div class="tr-scores">${scoreHtml}</div>
+    <span class="${nc}" data-live-name>${name}</span>
+    <div class="tr-scores" data-live-scores>${scoreHtml}</div>
   </div>`;
 }
 </script>
