@@ -181,28 +181,9 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 </header>
 
 <div class="tmt-bar">
-  <select class="tmt-select" id="tmt-select" onchange="onTmtChange()">
-    <optgroup label="── 2026 Super 1000 ──">
-      <option value="malaysia-2026">Malaysia Open — Jan 6–11</option>
-      <option value="all-england-2026" selected>All England Open — Mar 3–8</option>
-      <option value="indonesia-open-2026">Indonesia Open — Jun 2–7</option>
-      <option value="china-open-2026">China Open — Jul 21–26</option>
-    </optgroup>
-    <optgroup label="── 2026 Super 750 ──">
-      <option value="india-open-2026">India Open — Jan 13–18</option>
-      <option value="singapore-open-2026">Singapore Open — May 26–31</option>
-      <option value="japan-open-2026">Japan Open — Jul 14–19</option>
-      <option value="denmark-open-2026">Denmark Open — Oct 13–18</option>
-      <option value="french-open-2026">French Open — Oct 20–25</option>
-    </optgroup>
-    <optgroup label="── 2026 Super 500 ──">
-      <option value="thailand-open-2026">Thailand Open — May 12–17</option>
-      <option value="arctic-open-2026">Arctic Open — Oct 6–11</option>
-      <option value="hylo-open-2026">Hylo Open — Oct 27–Nov 1</option>
-    </optgroup>
-  </select>
+  <select class="tmt-select" id="tmt-select" onchange="onTmtChange()"></select>
   <span id="tmt-level-badge" class="tmt-badge badge-s1000">Super 1000</span>
-  <span id="tmt-location" class="tmt-meta">Birmingham, England</span>
+  <span id="tmt-location" class="tmt-meta"></span>
 </div>
 
 <div class="main-tabs">
@@ -236,7 +217,13 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 // dates (array of YYYY-MM-DD for each day), tmtUrl (results page link)
 // tmtCode can be found by opening DevTools on the BWF results page and looking
 // at network requests for "day-matches?tournamentCode=..."
+// TOURNAMENT REGISTRY — Super 300+ events for 2026.
+// To add/enable a tournament:
+//   1. Set tmtId from the BWF results page URL (e.g. /tournament/5227/...)
+//   2. Set tmtCode UUID from DevTools: Network tab → find day-matches request → copy tournamentCode param
+//   tmtCode 'UNKNOWN' = data not yet available (tournament hasn't started, or UUID not grabbed yet)
 const TOURNAMENTS = {
+  // ── Super 1000 ────────────────────────────────────────────────────────────
   'malaysia-2026': {
     name:'Malaysia Open 2026', level:'Super 1000', location:'Kuala Lumpur, Malaysia', badge:'s1000',
     tmtId:5227, tmtCode:'41287386-9043-4062-99C8-3FFBB9B26C1E',
@@ -250,17 +237,24 @@ const TOURNAMENTS = {
     hasKVCache:true,
     tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5515/yonex-all-england-open-badminton-championships-2026/results'
   },
-  'india-open-2026': {
-    name:'India Open 2026', level:'Super 750', location:'New Delhi, India', badge:'s750',
-    tmtId:5511, tmtCode:'UNKNOWN',
-    dates:['2026-01-13','2026-01-14','2026-01-15','2026-01-16','2026-01-17','2026-01-18'],
-    tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5511/yonex-sunrise-india-open-2026/results'
-  },
   'indonesia-open-2026': {
     name:'Indonesia Open 2026', level:'Super 1000', location:'Jakarta, Indonesia', badge:'s1000',
     tmtId:0, tmtCode:'UNKNOWN',
     dates:['2026-06-02','2026-06-03','2026-06-04','2026-06-05','2026-06-06','2026-06-07'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'china-open-2026': {
+    name:'China Open 2026', level:'Super 1000', location:'Changzhou, China', badge:'s1000',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-07-21','2026-07-22','2026-07-23','2026-07-24','2026-07-25','2026-07-26'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  // ── Super 750 ─────────────────────────────────────────────────────────────
+  'india-open-2026': {
+    name:'India Open 2026', level:'Super 750', location:'New Delhi, India', badge:'s750',
+    tmtId:5269, tmtCode:'UNKNOWN',
+    dates:['2026-01-13','2026-01-14','2026-01-15','2026-01-16','2026-01-17','2026-01-18'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5269/yonex-sunrise-india-open-2026/results'
   },
   'singapore-open-2026': {
     name:'Singapore Open 2026', level:'Super 750', location:'Singapore', badge:'s750',
@@ -268,10 +262,16 @@ const TOURNAMENTS = {
     dates:['2026-05-26','2026-05-27','2026-05-28','2026-05-29','2026-05-30','2026-05-31'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
-  'thailand-open-2026': {
-    name:'Thailand Open 2026', level:'Super 500', location:'Bangkok, Thailand', badge:'s500',
+  'china-masters-2026': {
+    name:'China Masters 2026', level:'Super 750', location:'Shenzhen, China', badge:'s750',
     tmtId:0, tmtCode:'UNKNOWN',
-    dates:['2026-05-12','2026-05-13','2026-05-14','2026-05-15','2026-05-16','2026-05-17'],
+    dates:['2026-09-01','2026-09-02','2026-09-03','2026-09-04','2026-09-05','2026-09-06'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'japan-open-2026': {
+    name:'Japan Open 2026', level:'Super 750', location:'Tokyo, Japan', badge:'s750',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-07-14','2026-07-15','2026-07-16','2026-07-17','2026-07-18','2026-07-19'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
   'denmark-open-2026': {
@@ -286,16 +286,29 @@ const TOURNAMENTS = {
     dates:['2026-10-20','2026-10-21','2026-10-22','2026-10-23','2026-10-24','2026-10-25'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
-  'china-open-2026': {
-    name:'China Open 2026', level:'Super 1000', location:'Changzhou, China', badge:'s1000',
+  // ── Super 500 ─────────────────────────────────────────────────────────────
+  'indonesia-masters-2026': {
+    name:'Indonesia Masters 2026', level:'Super 500', location:'Jakarta, Indonesia', badge:'s500',
     tmtId:0, tmtCode:'UNKNOWN',
-    dates:['2026-07-21','2026-07-22','2026-07-23','2026-07-24','2026-07-25','2026-07-26'],
+    dates:['2026-01-20','2026-01-21','2026-01-22','2026-01-23','2026-01-24','2026-01-25'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
-  'japan-open-2026': {
-    name:'Japan Open 2026', level:'Super 750', location:'Tokyo, Japan', badge:'s750',
+  'swiss-open-2026': {
+    name:'Swiss Open 2026', level:'Super 500', location:'Basel, Switzerland', badge:'s500',
     tmtId:0, tmtCode:'UNKNOWN',
-    dates:['2026-07-14','2026-07-15','2026-07-16','2026-07-17','2026-07-18','2026-07-19'],
+    dates:['2026-03-10','2026-03-11','2026-03-12','2026-03-13','2026-03-14','2026-03-15'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'thailand-open-2026': {
+    name:'Thailand Open 2026', level:'Super 500', location:'Bangkok, Thailand', badge:'s500',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-05-12','2026-05-13','2026-05-14','2026-05-15','2026-05-16','2026-05-17'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'australian-open-2026': {
+    name:'Australian Open 2026', level:'Super 500', location:'Sydney, Australia', badge:'s500',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-06-09','2026-06-10','2026-06-11','2026-06-12','2026-06-13','2026-06-14'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
   'arctic-open-2026': {
@@ -308,6 +321,18 @@ const TOURNAMENTS = {
     name:'Hylo Open 2026', level:'Super 500', location:'Saarbrücken, Germany', badge:'s500',
     tmtId:0, tmtCode:'UNKNOWN',
     dates:['2026-10-27','2026-10-28','2026-10-29','2026-10-30','2026-10-31','2026-11-01'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'japan-masters-2026': {
+    name:'Japan Masters 2026', level:'Super 500', location:'Kumamoto, Japan', badge:'s500',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-11-10','2026-11-11','2026-11-12','2026-11-13','2026-11-14','2026-11-15'],
+    tmtUrl:'https://bwfworldtour.bwfbadminton.com'
+  },
+  'hong-kong-open-2026': {
+    name:'Hong Kong Open 2026', level:'Super 500', location:'Hong Kong, China', badge:'s500',
+    tmtId:0, tmtCode:'UNKNOWN',
+    dates:['2026-11-17','2026-11-18','2026-11-19','2026-11-20','2026-11-21','2026-11-22'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com'
   },
 };
@@ -331,14 +356,88 @@ const CARD_H   = 70;
 const CARD_W   = 230;
 const GAP_BASE = 8;
 
-let activeTmt      = 'all-england-2026';
 let activeDraw     = '1';
 let activeMainTab  = 'draw';
-let cachedData     = null;   // raw /data response, shared across all draws
+let cachedData     = null;
 let autoTimer      = null;
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
+// Pick the most relevant tournament: in-progress > most recently ended > next upcoming
+function pickDefaultTournament() {
+  const today = new Date().toISOString().slice(0,10);
+  const keys  = Object.keys(TOURNAMENTS);
+
+  // 1. Any tournament currently in progress?
+  const live = keys.find(k => {
+    const d = TOURNAMENTS[k].dates;
+    return today >= d[0] && today <= d[d.length-1];
+  });
+  if (live) return live;
+
+  // 2. Most recently completed
+  const past = keys.filter(k => TOURNAMENTS[k].dates[TOURNAMENTS[k].dates.length-1] < today);
+  if (past.length) return past.reduce((a,b) =>
+    TOURNAMENTS[a].dates[TOURNAMENTS[a].dates.length-1] > TOURNAMENTS[b].dates[TOURNAMENTS[b].dates.length-1] ? a : b
+  );
+
+  // 3. Next upcoming
+  const future = keys.filter(k => TOURNAMENTS[k].dates[0] > today);
+  if (future.length) return future.reduce((a,b) =>
+    TOURNAMENTS[a].dates[0] < TOURNAMENTS[b].dates[0] ? a : b
+  );
+
+  return keys[0];
+}
+
+// Always derive activeTmt from the dropdown — never from a hardcoded default.
+// On first load the dropdown's selected option determines the tournament;
+// we set that option to the smart default before reading it.
+let activeTmt = pickDefaultTournament();
+
+// Build the tournament dropdown dynamically from TOURNAMENTS registry.
+// Groups by badge level, marks unavailable ones, auto-formats dates.
+function buildTmtDropdown() {
+  const sel = document.getElementById('tmt-select');
+  const today = new Date().toISOString().slice(0,10);
+
+  // Group by level
+  const groups = {'s1000':'Super 1000','s750':'Super 750','s500':'Super 500','s300':'Super 300'};
+  const grouped = {'s1000':[],'s750':[],'s500':[],'s300':[]};
+  Object.entries(TOURNAMENTS).forEach(([key, t]) => {
+    if (grouped[t.badge]) grouped[t.badge].push([key, t]);
+  });
+
+  // Sort each group chronologically
+  Object.values(grouped).forEach(arr => arr.sort((a,b) => a[1].dates[0].localeCompare(b[1].dates[0])));
+
+  sel.innerHTML = '';
+  Object.entries(groups).forEach(([badge, label]) => {
+    const items = grouped[badge];
+    if (!items.length) return;
+    const og = document.createElement('optgroup');
+    og.label = label;
+    items.forEach(([key, t]) => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      const d0 = t.dates[0], d1 = t.dates[t.dates.length-1];
+      // Format: "Jan 6–11" or "Mar 3–8"
+      const fmt = d => new Date(d+'T12:00:00Z').toLocaleDateString('en-GB',{month:'short',day:'numeric'});
+      const isLive = today >= d0 && today <= d1;
+      const isPast = d1 < today;
+      const hasData = t.tmtCode && t.tmtCode !== 'UNKNOWN';
+      const liveTag = isLive ? ' 🔴' : '';
+      opt.textContent = `${t.name.replace(' 2026','')} — ${fmt(d0)}–${fmt(d1).split(' ')[1]}${liveTag}`;
+      if (!hasData && !isLive) opt.style.color = '#666';
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+
+  sel.value = activeTmt;
+}
+
 window.addEventListener('load', () => {
+  buildTmtDropdown();
   buildDiscTabs();
   loadCurrentTournament();
 });
@@ -411,7 +510,8 @@ function refreshCurrent() {
 
 async function fetchData() {
   const tmt = TOURNAMENTS[activeTmt];
-  if (!tmt.tmtId && !tmt.hasKVCache) throw new Error('Tournament not yet configured — tmtId unknown.');
+  if (tmt.tmtCode === 'UNKNOWN' && !tmt.hasKVCache)
+    throw new Error('This tournament isn\'t available yet — tmtCode not configured.');
 
   // All England uses the pre-cached KV store
   if (tmt.hasKVCache) {
@@ -935,23 +1035,21 @@ function renderBracket(data, drawCode) {
 }
 
 function renderSVGJoins(fromCount, toCount, fromGap, toGap, fromTopPad, toTopPad, width) {
+  // HEADER_H must match the actual rendered .round-hdr height
   const HEADER_H = 30;
-  const totalH = Math.max(
-    fromCount * CARD_H + (fromCount-1)*fromGap + fromTopPad*2,
-    toCount * CARD_H + (toCount-1)*toGap + toTopPad*2
-  ) + HEADER_H + 20;
+  const totalH = fromCount * CARD_H + (fromCount-1)*fromGap + fromTopPad + HEADER_H + 20;
   const pairSize = fromCount / toCount;
   let paths = '';
 
   for (let ti = 0; ti < toCount; ti++) {
     const f1 = ti * pairSize;
     const f2 = ti * pairSize + pairSize - 1;
-    const y1 = HEADER_H + fromTopPad + f1*(CARD_H+fromGap) + CARD_H/2;
-    const y2 = HEADER_H + fromTopPad + f2*(CARD_H+fromGap) + CARD_H/2;
+    const y1   = HEADER_H + fromTopPad + f1*(CARD_H+fromGap) + CARD_H/2;
+    const y2   = HEADER_H + fromTopPad + f2*(CARD_H+fromGap) + CARD_H/2;
     const yMid = (y1+y2)/2;
-    const yt = HEADER_H + toTopPad + ti*(CARD_H+toGap) + CARD_H/2;
+    // yt must equal yMid: the "to" card is centred between its two "from" cards by definition
     paths += `<line x1="0" y1="${y1.toFixed(1)}" x2="0" y2="${y2.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
-    paths += `<line x1="0" y1="${yMid.toFixed(1)}" x2="${width}" y2="${yt.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
+    paths += `<line x1="0" y1="${yMid.toFixed(1)}" x2="${width}" y2="${yMid.toFixed(1)}" stroke="#2e2e2e" stroke-width="1"/>`;
   }
 
   return `<svg class="vjoins" width="${width}" height="${totalH}" style="flex-shrink:0;overflow:visible;margin-top:-${HEADER_H}px">${paths}</svg>`;
