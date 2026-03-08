@@ -239,7 +239,7 @@ header{background:var(--red);height:52px;display:flex;align-items:center;justify
 const TOURNAMENTS = {
   'malaysia-2026': {
     name:'Malaysia Open 2026', level:'Super 1000', location:'Kuala Lumpur, Malaysia', badge:'s1000',
-    tmtId:5227, tmtCode:'3E1F2E88-4D3A-4B8A-9C1F-2E884D3A4B8A',
+    tmtId:5227, tmtCode:'41287386-9043-4062-99C8-3FFBB9B26C1E',
     dates:['2026-01-06','2026-01-07','2026-01-08','2026-01-09','2026-01-10','2026-01-11'],
     tmtUrl:'https://bwfworldtour.bwfbadminton.com/tournament/5227/petronas-malaysia-open-2026/results'
   },
@@ -428,10 +428,11 @@ async function fetchData() {
   for (const date of tmt.dates) {
     for (const draw of draws) {
       tasks.push(
-        fetch(`${PROXY_URL}/fetch?tmtId=${tmt.tmtId}&date=${date}&drawCode=${draw}`)
+        fetch(`${PROXY_URL}/fetch?tmtCode=${tmt.tmtCode || ''}&tmtId=${tmt.tmtId}&date=${date}&drawCode=${draw}`)
           .then(r => r.ok ? r.json() : null)
           .then(json => {
-            if (!json || json.error) return;
+            if (!json) return;
+            if (json.error) { console.warn('BWF fetch error:', json.error); return; }
             const items = json.results || json.matches || json || [];
             const list = Array.isArray(items) ? items : Object.values(items);
             list.forEach(m => {
@@ -833,7 +834,15 @@ function renderBracket(data, drawCode) {
   const matchList = Object.values(drawMatches);
 
   if (!matchList.length) {
-    document.getElementById('bracket-content').innerHTML = `<div class="center"><div class="ctext">No draw data yet for this discipline.</div></div>`;
+    const tmt = TOURNAMENTS[activeTmt];
+    const isUnknown = !tmt.hasKVCache && tmt.tmtId;
+    document.getElementById('bracket-content').innerHTML = `<div class="center">
+      <div class="ctext" style="color:var(--red)">${isUnknown ? 'Could Not Load Draw' : 'No Draw Data'}</div>
+      <div class="ctext">${isUnknown
+        ? 'The worker could not resolve this tournament\'s UUID automatically. Open the BWF results page in DevTools → Network → find the day-matches request → copy the tournamentCode UUID → add it as <code>tmtCode</code> in the TOURNAMENTS registry.'
+        : 'No draw data yet for this discipline.'
+      }</div>
+    </div>`;
     return;
   }
 
@@ -938,7 +947,7 @@ function renderCard(match, isFinal) {
   const w = match.winner;
   const hasFrench = isFrenchTeam(match.team1)||isFrenchTeam(match.team2);
   const _t = TOURNAMENTS[activeTmt];
-  const _md = m.matchTime ? m.matchTime.slice(0,10) : '';
+  const _md = match.matchTime ? match.matchTime.slice(0,10) : '';
   const bwfUrl = (_t.tmtUrl || 'https://bwfworldtour.bwfbadminton.com') + (_md ? '/' + _md : '');
   const statusLabel = isLive ? 'LIVE' : isDone ? 'FT' : (match.matchTime ? match.matchTime.slice(11,16) : '—');
   const statusClass = isLive ? 'st-live' : isDone ? 'st-ft' : 'st-next';
