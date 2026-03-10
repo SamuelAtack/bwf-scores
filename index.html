@@ -386,10 +386,27 @@ const DRAW_LIST = [
   { code:'5', label:"Mixed Doubles",    short:'XD' },
 ];
 
-// Round order for bracket columns (left → right)
-const ROUND_ORDER = ['R64','R32','R16','QF','SF','F','Final'];
-const ROUND_NAMES      = { R64:'R64', R32:'R32', R16:'R16', QF:'QF', SF:'SF', F:'Final', Final:'Final' };
-const ROUND_NAMES_LONG = { R64:'Round of 64', R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Final', SF:'Semi-Final', F:'Final', Final:'Final' };
+// Round order for bracket columns (left → right).
+// Qualifying rounds come first, then main draw rounds.
+// BWF uses various naming conventions across tournaments.
+const ROUND_ORDER = [
+  'Qual. R32','Qual. R16','Qual. R2','Qual. R1','Qual. QF','Qual. Of','Qual. SF','Qual. F',  // qualifying
+  'R128','R64','R32','R16','QF','SF','F','Final'                                              // main draw
+];
+const ROUND_NAMES = {
+  'Qual. R32':'Q-R32', 'Qual. R16':'Q-R16', 'Qual. R2':'Q-R2', 'Qual. R1':'Q-R1',
+  'Qual. QF':'Q-QF', 'Qual. Of':'Q-QF', 'Qual. SF':'Q-SF', 'Qual. F':'Q-F',
+  R128:'R128', R64:'R64', R32:'R32', R16:'R16',
+  QF:'QF', SF:'SF', F:'Final', Final:'Final'
+};
+const ROUND_NAMES_LONG = {
+  'Qual. R32':'Qual. Round of 32', 'Qual. R16':'Qual. Round of 16',
+  'Qual. R2':'Qual. Round 2', 'Qual. R1':'Qual. Round 1',
+  'Qual. QF':'Qual. Quarter-Final', 'Qual. Of':'Qual. Quarter-Final',
+  'Qual. SF':'Qual. Semi-Final', 'Qual. F':'Qual. Final',
+  R128:'Round of 128', R64:'Round of 64', R32:'Round of 32', R16:'Round of 16',
+  QF:'Quarter-Final', SF:'Semi-Final', F:'Final', Final:'Final'
+};
 
 const CARD_H   = 78;
 const CARD_W   = 230;
@@ -585,9 +602,9 @@ async function fetchData() {
         const list = Array.isArray(items) ? items : Object.values(items);
         const DRAW_NAME_TO_CODE = { MS:'1', WS:'2', MD:'3', WD:'4', XD:'5' };
         list.forEach(m => {
-          // Prefer drawName→code mapping over raw drawCode — some tournaments
-          // use non-standard drawCode values but drawName is always MS/WS/MD/WD/XD
-          const dc = DRAW_NAME_TO_CODE[m.drawName] || String(m.drawCode ?? '');
+          // Strip " - Qualification" suffix — BWF uses e.g. "MD - Qualification" for qual draws
+          const baseName = (m.drawName || '').replace(/\s*-\s*Qualification$/i, '').trim();
+          const dc = DRAW_NAME_TO_CODE[baseName] || String(m.drawCode ?? '');
           if (!dc || !allMatches[dc]) return;
           // Normalise drawCode on the match object itself so rendering is consistent
           m.drawCode = dc;
@@ -773,7 +790,7 @@ function renderScoreboard(data) {
   const allMatches = data.matches || {};
   const DISC_LABELS = {'1':"MS",'2':"WS",'3':"MD",'4':"WD",'5':"XD"};
   const DISC_FULL   = {'1':"Men's Singles",'2':"Women's Singles",'3':"Men's Doubles",'4':"Women's Doubles",'5':"Mixed Doubles"};
-  const ROUND_ORDER_SB = ['F','Final','SF','QF','R16','R32','R64'];
+  const ROUND_ORDER_SB = ['F','Final','SF','QF','R16','R32','R64','R128','Qual. F','Qual. SF','Qual. Of','Qual. QF','Qual. R1','Qual. R2','Qual. R16','Qual. R32'];
 
   // Flatten all matches, attach drawCode
   let all = [];
@@ -979,7 +996,7 @@ function renderFrenchPanel(data) {
   }
 
   // Sort matches by round order for each player
-  const roundOrder = ['R64','R32','R16','QF','SF','F','Final'];
+  const roundOrder = ['Qual. R32','Qual. R16','Qual. R2','Qual. R1','Qual. Of','Qual. QF','Qual. SF','Qual. F','R128','R64','R32','R16','QF','SF','F','Final'];
   players.forEach(fp => {
     fp.matches.sort((a,b) => roundOrder.indexOf(a.match.roundName) - roundOrder.indexOf(b.match.roundName));
     // Determine current status
