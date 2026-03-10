@@ -583,11 +583,14 @@ async function fetchData() {
         if (!json || json.error) { if (json?.error) console.warn('BWF:', json.error); return; }
         const items = json.results || [];
         const list = Array.isArray(items) ? items : Object.values(items);
+        const DRAW_NAME_TO_CODE = { MS:'1', WS:'2', MD:'3', WD:'4', XD:'5' };
         list.forEach(m => {
-          const dc = String(m.drawCode ?? '');
+          // Prefer drawName→code mapping over raw drawCode — some tournaments
+          // use non-standard drawCode values but drawName is always MS/WS/MD/WD/XD
+          const dc = DRAW_NAME_TO_CODE[m.drawName] || String(m.drawCode ?? '');
           if (!dc || !allMatches[dc]) return;
-          // Use roundName+code as key — BWF reuses small code numbers across rounds
-          // so plain code collides (e.g. MS Final code:"1" overwrites MS R32 code:"1")
+          // Normalise drawCode on the match object itself so rendering is consistent
+          m.drawCode = dc;
           const key = `${m.roundName || 'X'}_${m.code || m.id || ''}`;
           if (key !== 'X_') allMatches[dc][key] = m;
         });
@@ -941,7 +944,7 @@ function getWinner(m) {
 // ─── FRENCH PLAYERS PANEL ────────────────────────────────────────────────────
 function renderFrenchPanel(data) {
   const allMatches = data.matches || {};
-  const frenchPlayers = {}; // key: playerId, value: { player, matches[], discipline }
+  const frenchPlayers = {}; // key: playerId_drawCode
 
   DRAW_LIST.forEach(disc => {
     const drawMatches = allMatches[disc.code] || {};
@@ -951,16 +954,16 @@ function renderFrenchPanel(data) {
         if (!team || !team.players) return;
         team.players.forEach(p => {
           if (p.countryCode === 'FRA') {
-            if (!frenchPlayers[p.id]) {
-              frenchPlayers[p.id] = { player: p, matches: [], discipline: disc.label, partnerIds: [] };
+            const key = `${p.id}_${disc.code}`;
+            if (!frenchPlayers[key]) {
+              frenchPlayers[key] = { player: p, matches: [], discipline: disc.label, partnerIds: [] };
             }
-            // Add partner if doubles
             const partner = team.players.find(pp => pp.id !== p.id);
-            if (partner && !frenchPlayers[p.id].partnerIds.includes(partner.id)) {
-              frenchPlayers[p.id].partnerIds.push(partner.id);
-              frenchPlayers[p.id].partner = partner;
+            if (partner && !frenchPlayers[key].partnerIds.includes(partner.id)) {
+              frenchPlayers[key].partnerIds.push(partner.id);
+              frenchPlayers[key].partner = partner;
             }
-            frenchPlayers[p.id].matches.push({ match, teamNum: ti + 1 });
+            frenchPlayers[key].matches.push({ match, teamNum: ti + 1 });
           }
         });
       });
